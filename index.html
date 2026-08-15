@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>⚕ نظام إدارة عيادة النساء والتوليد</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#f3f6fa;color:#1e293b;direction:rtl;min-height:100vh}
+header{background:linear-gradient(135deg,#be185d,#7e22ce);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+header h1{font-size:19px;display:flex;align-items:center;gap:8px}
+.status{padding:5px 14px;border-radius:20px;font-size:12.5px;font-weight:bold;color:#fff;cursor:pointer;border:0}
+.status.online{background:#16a34a}.status.offline{background:#d97706}.status.error{background:#dc2626}
+nav{display:flex;gap:6px;padding:10px 16px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.06);flex-wrap:wrap;position:sticky;top:0;z-index:50}
+.tab{border:0;background:#f1f5f9;padding:9px 16px;border-radius:10px;cursor:pointer;font-size:14px;font-family:inherit;transition:.15s}
+.tab:hover{background:#e2e8f0}
+.tab.active{background:#be185d;color:#fff;font-weight:bold;box-shadow:0 2px 8px rgba(190,24,93,.35)}
+.badge{background:#ef4444;color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-right:4px}
+.badge:empty{display:none}
+main{max-width:1200px;margin:16px auto;padding:0 14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:#fff;border-radius:14px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07);transition:.2s}
+.stat:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(0,0,0,.09)}
+.stat .num{font-size:26px;font-weight:800;color:#be185d}
+.stat .lbl{font-size:12.5px;color:#64748b;margin-top:2px}
+.card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:16px}
+.card h2{font-size:17px;margin-bottom:14px;color:#9d174d}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.field label{display:block;font-size:13px;margin-bottom:4px;color:#475569;font-weight:600}
+.field input,.field select,.field textarea{width:100%;padding:9px 10px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:inherit;font-size:14px;background:#fff}
+.field textarea{min-height:60px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus{outline:0;border-color:#be185d}
+.field input[readonly]{background:#f1f5f9}
+.btn{border:0;border-radius:10px;padding:10px 18px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;transition:.15s}
+.btn.primary{background:#be185d;color:#fff}.btn.primary:hover{background:#9d174d}
+.btn.blue{background:#0284c7;color:#fff}.btn.blue:hover{background:#0369a1}
+.btn.gray{background:#e2e8f0;color:#334155}.btn.gray:hover{background:#cbd5e1}
+.btn.red{background:#ef4444;color:#fff}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.chip{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:700}
+.chip.wait{background:#fef3c7;color:#92400e}
+.chip.call{background:#dbeafe;color:#1d4ed8}
+.chip.done{background:#dcfce7;color:#15803d}
+.chip.exam{background:#fce7f3;color:#9d174d}
+.chip.followup{background:#e0e7ff;color:#3730a3}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar select,.toolbar input{padding:8px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:inherit}
+.appt-fbtn.active{background:#be185d!important;color:#fff!important}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f8fafc;padding:9px;text-align:right;border-bottom:2px solid #e2e8f0;color:#475569;white-space:nowrap}
+td{padding:8px 9px;border-bottom:1px solid #f1f5f9}
+tr:hover td{background:#fdf2f8}
+.queue-item{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px;margin-bottom:10px;background:#fff}
+.queue-item.called{border-color:#3b82f6;background:#eff6ff}
+.queue-item .ord{width:34px;height:34px;border-radius:50%;background:#be185d;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.day-group{margin-bottom:18px}
+.day-head{display:flex;align-items:center;gap:8px;background:#fdf2f8;border-right:4px solid #be185d;padding:9px 12px;border-radius:8px;font-weight:800;margin-bottom:8px;flex-wrap:wrap}
+.day-head .cnt{background:#be185d;color:#fff;border-radius:10px;padding:1px 9px;font-size:12px}
+.appt-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:7px;background:#fff}
+.appt-row.past{opacity:.55}
+.appt-row .tm{background:#f1f5f9;border-radius:8px;padding:4px 10px;font-weight:800;color:#0369a1;white-space:nowrap}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-start;justify-content:center;z-index:200;overflow:auto;padding:30px 12px}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:16px;max-width:860px;width:100%;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+.x{border:0;background:#fee2e2;color:#b91c1c;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;flex:none}
+.chat-wrap{display:grid;grid-template-columns:290px 1fr;gap:14px;height:72vh;min-height:430px}
+.chat-side{background:#fff;border-radius:14px;padding:14px;overflow:auto;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+#usersList{list-style:none}
+.user-item{display:flex;align-items:center;gap:8px;padding:10px;border-radius:10px;cursor:pointer;margin-bottom:4px;border:1.5px solid transparent}
+.user-item:hover{background:#f1f5f9}
+.user-item.active{background:#fdf2f8;border-color:#be185d}
+.dot{width:10px;height:10px;border-radius:50%;background:#22c55e;flex:none}
+.convo{background:#fff;border-radius:14px;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
+#convoHead{padding:12px 16px;border-bottom:1px solid #e2e8f0;font-weight:800;background:#f8fafc}
+#msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:#f8fafc}
+.msg{max-width:72%;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.6;word-wrap:break-word;white-space:pre-wrap}
+.msg.me{align-self:flex-start;background:#be185d;color:#fff;border-bottom-right-radius:4px}
+.msg.them{align-self:flex-end;background:#fff;border:1px solid #e2e8f0;border-bottom-left-radius:4px}
+.msg .mt{display:block;font-size:10px;opacity:.65;margin-top:3px}
+.msg-input{display:flex;gap:8px;padding:12px;border-top:1px solid #e2e8f0}
+.msg-input input{flex:1;padding:10px;border:1.5px solid #cbd5e1;border-radius:10px;font-family:inherit}
+.set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.set-card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.set-card h3{font-size:15px;margin-bottom:10px;color:#9d174d}
+.add-row{display:flex;gap:6px;margin-bottom:10px}
+.add-row input{flex:1;padding:8px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:inherit}
+.set-list{list-style:none}
+.set-list li{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:#f8fafc;margin-bottom:5px;font-size:14px}
+.set-list li button{border:0;background:none;color:#ef4444;cursor:pointer;font-size:15px}
+.rx-row{display:grid;grid-template-columns:2fr 1.2fr 1.2fr 38px;gap:8px;margin-bottom:8px}
+.rx-row input{padding:9px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:inherit;width:100%}
+.rx-hist{margin-top:14px;border-top:1px dashed #cbd5e1;padding-top:10px}
+.rx-hist-item{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f8fafc;border-radius:9px;padding:8px 10px;margin-bottom:6px;font-size:13px;flex-wrap:wrap}
+#acBox{position:fixed;display:none;background:#fff;border:1.5px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:999;max-height:230px;overflow:auto}
+#acBox .ac-item{padding:9px 13px;cursor:pointer;font-size:14px;border-bottom:1px solid #f1f5f9}
+#acBox .ac-item:hover,#acBox .ac-item.sel{background:#fce7f3}
+#toast{position:fixed;bottom:24px;right:50%;transform:translateX(50%);background:#0f172a;color:#fff;padding:12px 22px;border-radius:12px;opacity:0;transition:.3s;z-index:9999;pointer-events:none;font-size:14px;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+.empty{text-align:center;color:#94a3b8;padding:30px}
+.link-banner{display:none;gap:8px;align-items:center;flex-wrap:wrap;background:#fef9c3;border:1.5px solid #facc15;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:13px}
+.pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.flabel{display:block;font-size:13px;font-weight:600;color:#475569;margin:8px 0 4px}
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px}
+.att-item{position:relative;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0}
+.att-item img{width:100%;height:90px;object-fit:cover;cursor:pointer;display:block}
+.att-date{position:absolute;bottom:0;right:0;left:0;background:rgba(15,23,42,.72);color:#fff;font-size:10px;text-align:center;padding:2px 4px;pointer-events:none}
+.att-del{position:absolute;top:4px;left:4px;background:rgba(239,68,68,.92);color:#fff;border:0;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:11px}
+#printArea{display:none}
+.paper{font-family:'Segoe UI',Tahoma,sans-serif;direction:ltr;color:#111;max-width:700px;margin:0 auto;padding:20px}
+.paper .ph{text-align:center;border-bottom:3px double #be185d;padding-bottom:10px;margin-bottom:14px}
+.paper .ph h1{color:#be185d;font-size:26px}
+.paper .pmeta{display:flex;justify-content:space-between;gap:10px;font-size:14px;margin-bottom:12px;flex-wrap:wrap}
+.paper .diag{background:#fdf2f8;padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:15px}
+.paper ol{padding-inline-start:22px;font-size:16px;line-height:2.2}
+.paper .sign{margin-top:44px;display:flex;justify-content:space-between;font-size:14px;flex-wrap:wrap;gap:10px}
+@media print{ body>*{display:none!important} #printArea{display:block!important} }
+/* بنود اختيار (مربعات صح) للتاريخ المرضي والأمراض المزمنة */
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
+.check-item{display:flex;align-items:center;gap:7px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 10px;cursor:pointer;font-size:13.5px;transition:.15s}
+.check-item:hover{border-color:#f9a8d4}
+.check-item.checked{background:#fdf2f8;border-color:#be185d;color:#9d174d;font-weight:700}
+.check-item input{accent-color:#be185d;width:16px;height:16px;flex:none}
+.lab-row{display:grid;grid-template-columns:1.6fr 1.3fr 1.3fr 90px 38px;gap:8px;margin-bottom:8px;align-items:center}
+.lab-row input{padding:9px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:inherit;width:100%}
+.lab-table th,.lab-table td{font-size:12.5px}
+.insight{background:linear-gradient(135deg,#fdf2f8,#eef2ff);border:1.5px solid #f5d0e8;border-radius:12px;padding:12px 14px;font-size:13.5px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
+.setup-box{max-width:520px;margin:60px auto;background:#fff;border-radius:16px;padding:26px;box-shadow:0 10px 40px rgba(0,0,0,.15)}
+.setup-box h2{color:#9d174d;margin-bottom:6px}
+.setup-box p{color:#64748b;font-size:13.5px;margin-bottom:16px;line-height:1.7}
+.setup-box .field{margin-bottom:12px}
+@media(max-width:800px){
+  .chat-wrap{grid-template-columns:1fr;height:auto}
+  .convo{height:62vh}
+  .rx-row{grid-template-columns:1fr 1fr}
+  .rx-row .rx-note{grid-column:1/-1}
+  .lab-row{grid-template-columns:1fr 1fr}
+  .lab-row .lab-note{grid-column:1/-1}
+  .pf-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- شاشة إعداد الاتصال بـ Supabase (تظهر أول مرة فقط) -->
+<div id="setupScreen" style="display:none">
+  <div class="setup-box">
+    <h2>⚕ ربط النظام بـ Supabase</h2>
+    <p>عشان يشتغل النظام أونلاين على كل الأجهزة، هتحتاج تدخل بيانات مشروعك على Supabase مرة واحدة بس (هتتحفظ في المتصفح ده). لو لسه معملتش الجداول، شغّل ملف <b>supabase-schema.sql</b> في SQL Editor بمشروعك الأول.</p>
+    <div class="field"><label>Project URL</label><input id="setupUrl" placeholder="https://xxxxx.supabase.co"></div>
+    <div class="field"><label>anon public key</label><input id="setupKey" placeholder="eyJhbGciOi..."></div>
+    <button class="btn primary" id="setupSaveBtn" style="width:100%">🔗 اتصال وبدء التشغيل</button>
+    <p style="margin-top:10px;font-size:12px">تقدر تلاقي القيمتين دي في مشروعك على supabase.com تحت: Project Settings ← API</p>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none">
+
+<header>
+  <h1>⚕ نظام إدارة عيادة النساء والتوليد</h1>
+  <button class="status offline" id="connStatus">🟡 جاري الاتصال...</button>
+</header>
+
+<nav>
+  <button class="tab active" data-tab="reception">🏠 الريسبشن</button>
+  <button class="tab" data-tab="queue">🚶 طابور الانتظار <span class="badge" id="queueBadge"></span></button>
+  <button class="tab" data-tab="appointments">📅 الحجوزات</button>
+  <button class="tab" data-tab="patients">📋 المرضى</button>
+  <button class="tab" data-tab="stats">📊 الإحصائيات</button>
+  <button class="tab" data-tab="chat">💬 الشات <span class="badge" id="chatBadge"></span></button>
+  <button class="tab" data-tab="settings">⚙ الإعدادات</button>
+</nav>
+
+<main>
+  <div class="stats">
+    <div class="stat"><div class="num" id="stToday">0</div><div class="lbl">مريضات اليوم</div></div>
+    <div class="stat"><div class="num" id="stRevenue">0</div><div class="lbl">إيراد اليوم المتوقع (ج)</div></div>
+    <div class="stat"><div class="num" id="stWait">0</div><div class="lbl">في الانتظار الآن</div></div>
+    <div class="stat"><div class="num" id="stTotal">0</div><div class="lbl">إجمالي المريضات</div></div>
+  </div>
+
+  <!-- الريسبشن -->
+  <section id="tab-reception">
+    <div class="card">
+      <h2>➕ تسجيل مريضة جديدة <small style="font-weight:normal;color:#64748b;font-size:12px">(اكتب أول حروف من الاسم ولو مسجلة قبل كده هتظهر لك)</small></h2>
+      <div class="link-banner" id="regLinkBanner"></div>
+      <div class="form-grid" id="regForm"></div>
+      <div style="margin-top:10px;font-size:13px;color:#64748b" id="regPriceHint"></div>
+      <div class="toolbar" style="margin-top:14px">
+        <button class="btn primary" id="regSaveBtn">💾 حفظ </button>
+        <button class="btn gray" id="regClearBtn">مسح </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- طابور الانتظار -->
+  <section id="tab-queue" hidden>
+    <div class="card">
+      <h2>🚶 طابور الانتظار — بأسبقية تاريخ ووقت الحجز</h2>
+      <div class="toolbar">
+        <button class="btn blue" id="callNextBtn">📢 استدعاء التالية</button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="queueAllDays"> عرض كل الأيام</label>
+        <button class="btn gray" id="queueRefreshBtn">🔄 تحديث</button>
+      </div>
+      <div id="queueList"></div>
+    </div>
+  </section>
+
+  <!-- الحجوزات -->
+  <section id="tab-appointments" hidden>
+    <div class="card">
+      <h2>📅 الحجوزات (الأيام الجايه) <span id="apptCount" class="chip call"></span></h2>
+      <p style="font-size:12px;color:#94a3b8;margin-bottom:8px">ℹ️ حجوزات اليوم بتظهر مع طابور الانتظار — الصفحة دي للأيام القادمة فقط</p>
+      <div class="toolbar">
+        <button class="btn primary sm appt-fbtn active" id="apptBtnUp">📆 القادمة (بعد اليوم)</button>
+        <button class="btn gray sm appt-fbtn" id="apptBtnToday">⭐ اليوم</button>
+        <button class="btn gray sm appt-fbtn" id="apptBtnAll">🗂 الكل</button>
+        <input type="date" id="apptDate" title="اذهب لتاريخ معين">
+        <span style="flex:1"></span>
+        <button class="btn blue" id="newApptBtn">➕ حجز جديد</button>
+      </div>
+      <div id="apptList"></div>
+    </div>
+  </section>
+
+  <!-- سجل المريضات -->
+  <section id="tab-patients" hidden>
+    <div class="card">
+      <h2>📋 سجل المريضات — <span id="patScopeLbl">مريضات اليوم</span></h2>
+      <div class="toolbar">
+        <input type="text" id="patSearch" placeholder="🔍 ابحثي بالاسم أو الملاحظات...">
+        <input type="date" id="patDate" title="ابحثي بتاريخ معين">
+        <select id="patPurpose"></select>
+        <select id="patType"></select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="patShowAll"> إظهار جميع المريضات</label>
+        <button class="btn gray sm" id="patResetBtn">إعادة ضبط</button>
+        <span style="flex:1"></span>
+        <button class="btn blue" id="patExportBtn">📤 تصدير Excel</button>
+      </div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>#</th><th>الاسم</th><th>السن</th><th>هدف الزيارة</th><th>النوع</th><th>الحالة</th><th>التاريخ</th><th>إجراءات</th></tr></thead>
+          <tbody id="patBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- الإحصائيات -->
+  <section id="tab-stats" hidden>
+    <div class="insight" id="statsInsight"></div>
+    <div class="card">
+      <h2>📊 إحصائيات عامة</h2>
+      <div class="stats" id="statsGeneral"></div>
+    </div>
+    <div class="card">
+      <h2>🗓 إحصائيات يوم بيوم (غير تراكمية)</h2>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>التاريخ</th><th>عدد المريضات</th><th>كشف</th><th>إعادة</th><th>الإيراد المتوقع (ج)</th></tr></thead>
+          <tbody id="statsDayBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🎯 توزيع أهداف الزيارة</h2>
+      <div id="statsPurpose" style="overflow:auto"></div>
+    </div>
+    <div class="card">
+      <h2>🔁 نسبة ارتداد المريضات حسب السن</h2>
+      <p style="font-size:13px;color:#64748b;margin-bottom:10px">نسبة الارتداد = كام واحدة من كل فئة سنية رجعت للعيادة تاني (زيارة تانية أو أكتر) من إجمالي الفئة دي</p>
+      <div id="statsAgeSummary" style="margin-bottom:12px;font-size:14px"></div>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>الفئة العمرية</th><th>إجمالي المريضات</th><th>عدد الراجعات</th><th>نسبة الارتداد</th></tr></thead>
+          <tbody id="statsAgeBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- الشات الخاص -->
+  <section id="tab-chat" hidden>
+    <div class="chat-wrap">
+      <aside class="chat-side">
+        <label style="font-size:13px;font-weight:700;color:#475569">اسمك (يظهر للآخرين)</label>
+        <div class="add-row" style="margin-top:6px"><input id="chatMyName" placeholder="اكتب اسمك"><button class="btn primary sm" id="saveNameBtn">حفظ</button></div>
+        <h4 style="margin:14px 0 8px;color:#9d174d">🟢 المتصلين الآن</h4>
+        <ul id="usersList"></ul>
+        <div style="font-size:11px;color:#94a3b8;margin-top:10px">اضغطي على أي اسم عشان تفتحي معاه محادثة خاصة — الرسائل مش بتشوفها غيركوا الاتنين.</div>
+      </aside>
+      <div class="convo">
+        <div id="convoHead">💬 اختاري شخص من القائمة لبدء محادثة خاصة</div>
+        <div id="msgs"></div>
+        <div class="msg-input">
+          <input id="msgInput" placeholder="اكتبي رسالتك هنا... (Enter للإرسال)">
+          <button class="btn primary" id="sendBtn">إرسال</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- الإعدادات -->
+  <section id="tab-settings" hidden>
+    <div class="card">
+      <h2>⚙ الإعدادات العامة</h2>
+      <div class="form-grid">
+        <div class="field"><label>اسم العيادة (بيظهر في طباعة الروشتة)</label>
+          <div class="add-row"><input id="clinicName" placeholder="مثال: عيادة الشفاء"><button class="btn primary sm" id="saveClinicBtn">حفظ</button></div></div>
+        <div class="field"><label>💰 سعر الكشف (جنيه)</label>
+          <div class="add-row"><input id="examPrice" type="number" min="0"><button class="btn primary sm" id="saveExamPriceBtn">حفظ</button></div></div>
+        <div class="field"><label>💰 سعر الإعادة (جنيه)</label>
+          <div class="add-row"><input id="followupPrice" type="number" min="0"><button class="btn primary sm" id="saveFollowupPriceBtn">حفظ</button></div></div>
+      </div>
+    </div>
+    <div class="set-grid">
+      <div class="set-card"><h3>🎯 أهداف الزيارة</h3>
+        <div class="add-row"><input id="newPurpose" placeholder="مثال: كشف نسا"><button class="btn primary sm" id="addPurposeBtn">إضافة</button></div>
+        <ul class="set-list" id="list-visitPurposes"></ul></div>
+      <div class="set-card"><h3>📣 مصادر المعرفة (عرفتنا منين)</h3>
+        <div class="add-row"><input id="newSource" placeholder="مثال: فيسبوك"><button class="btn primary sm" id="addSourceBtn">إضافة</button></div>
+        <ul class="set-list" id="list-sources"></ul></div>
+      <div class="set-card" dir="ltr" lang="en"><h3 dir="rtl" lang="ar" style="text-align:right">🩺 بنود التاريخ المرضي (Medical History Items)</h3>
+        <div class="add-row"><input id="newHistOpt" placeholder="e.g. Previous C-Section"><button class="btn primary sm" id="addHistOptBtn">Add</button></div>
+        <ul class="set-list" id="list-historyOptions"></ul></div>
+      <div class="set-card" dir="ltr" lang="en"><h3 dir="rtl" lang="ar" style="text-align:right">🧬 بنود الأمراض المزمنة (Chronic Conditions)</h3>
+        <div class="add-row"><input id="newChronicOpt" placeholder="e.g. Diabetes"><button class="btn primary sm" id="addChronicOptBtn">Add</button></div>
+        <ul class="set-list" id="list-chronicOptions"></ul></div>
+    </div>
+    <div class="card">
+      <h2>🔗 الاتصال بـ Supabase</h2>
+      <div class="form-grid">
+        <div class="field"><label>Project URL</label><input id="cfgUrl"></div>
+        <div class="field"><label>anon public key</label><input id="cfgKey"></div>
+      </div>
+      <div class="toolbar" style="margin-top:10px"><button class="btn primary" id="saveCfgBtn">💾 حفظ وإعادة الاتصال</button></div>
+    </div>
+    <div class="card">
+      <h2>💾 النسخ الاحتياطي</h2>
+      <div class="toolbar">
+        <button class="btn blue" id="exportBackupBtn">📤 تصدير نسخة احتياطية (JSON)</button>
+      </div>
+      <p style="font-size:13px;color:#64748b">✅ البيانات كلها متزامنة مباشرة أونلاين عبر Supabase وبتظهر لحظيًا على كل الأجهزة المتصلة — النسخة الاحتياطية دي للأمان فقط.</p>
+    </div>
+  </section>
+</main>
+
+<!-- نافذة تعديل/إضافة مريضة -->
+<div class="modal" id="patientModal">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="pmTitle">✏️ تعديل بيانات مريضة</h3><button class="x" data-close="patientModal">✖</button></div>
+    <div class="form-grid" id="pmForm"></div>
+    <div class="toolbar" style="margin-top:14px">
+      <button class="btn primary" id="pmSaveBtn">💾 حفظ</button>
+      <button class="btn gray" data-close="patientModal">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة الروشتة (إنجليزي) -->
+<div class="modal" id="rxModal">
+  <div class="modal-box" dir="ltr" lang="en">
+    <div class="modal-head"><h3>💊 Prescription — <span id="rxPatientName"></span></h3><button class="x" data-close="rxModal">✖</button></div>
+    <div id="rxInfo" style="font-size:13px;color:#64748b;margin-bottom:10px"></div>
+    <div class="field" style="margin-bottom:12px">
+      <label>Diagnosis</label>
+      <input id="rxDiag" placeholder="Type diagnosis... (suggests previous entries)">
+    </div>
+    <label style="font-size:13px;font-weight:700;color:#475569;display:block;margin-bottom:6px">Medications</label>
+    <div style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 38px;gap:8px;font-size:12px;color:#94a3b8;margin-bottom:4px"><span>Medication</span><span>Dosage</span><span>Notes</span><span></span></div>
+    <div id="rxRows"></div>
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn gray sm" id="rxAddRowBtn">➕ Add Medication</button>
+      <span style="flex:1"></span>
+      <button class="btn primary" id="rxSaveBtn">💾 Save Prescription</button>
+      <button class="btn blue" id="rxSavePrintBtn">💾 Save + 🖨 Print</button>
+    </div>
+    <div id="rxHistory"></div>
+  </div>
+</div>
+
+<!-- نافذة ملف المريضة -->
+<div class="modal" id="fileModal">
+  <div class="modal-box" style="max-width:980px">
+    <div class="modal-head">
+      <h3>📁 ملف المريضة — <span id="pfName"></span></h3>
+      <span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button class="btn sm blue" id="pfWaBtn" style="display:none">🟢 واتساب</button>
+        <button class="btn sm blue" id="pfOpenRx">💊 روشتة جديدة</button>
+        <button class="x" data-close="fileModal">✖</button>
+      </span>
+    </div>
+    <div id="pfInfo" style="font-size:13px;color:#64748b;margin-bottom:8px"></div>
+    <div id="pfNextVisitBanner" style="display:none"></div>
+    <div class="pf-grid">
+      <div class="set-card" dir="ltr" lang="en">
+        <h3 dir="rtl" lang="ar" style="text-align:right">🩺 Medical History</h3>
+        <div class="check-grid" id="pfHistoryGrid"></div>
+        <div class="add-row"><input id="pfHistoryNew" placeholder="Add a new item and press Enter"></div>
+        <label class="flabel">Additional Notes</label>
+        <textarea id="pfHistoryNotes" style="width:100%;min-height:60px;padding:9px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:inherit;resize:vertical"></textarea>
+        <h3 style="margin-top:16px" dir="rtl" lang="ar">🧬 Chronic Conditions</h3>
+        <div class="check-grid" id="pfChronicGrid"></div>
+        <div class="add-row"><input id="pfChronicNew" placeholder="Add a new item and press Enter"></div>
+        <label class="flabel">Additional Notes</label>
+        <textarea id="pfChronicNotes" style="width:100%;min-height:50px;padding:9px;border:1.5px solid #cbd5e1;border-radius:9px;font-family:inherit;resize:vertical"></textarea>
+        <button class="btn primary sm" id="pfSaveMed" style="margin-top:10px">💾 Save Medical History</button>
+      </div>
+      <div class="set-card">
+        <h3 style="text-align:right">📷 صور الأشعة</h3>
+        <label class="btn blue sm" style="cursor:pointer;display:inline-block">➕ إضافة صورة<input type="file" id="pfFileInput" accept="image/*" multiple hidden></label>
+        <div id="pfAttachments" class="att-grid" style="margin-top:10px"></div>
+      </div>
+    </div>
+    <div class="set-card" style="margin-top:12px" dir="ltr" lang="en">
+      <h3 dir="rtl" lang="ar" style="text-align:right">🧪 Lab Results</h3>
+      <div style="display:grid;grid-template-columns:1.6fr 1.3fr 1.3fr 90px 38px;gap:8px;font-size:12px;color:#94a3b8;margin-bottom:4px"><span>Test Name</span><span>Result</span><span>Notes</span><span>Date</span><span></span></div>
+      <div id="labRows"></div>
+      <div class="toolbar" style="margin-top:8px"><button class="btn gray sm" id="labAddRowBtn">➕ Add Test</button></div>
+      <div id="labHistory" style="margin-top:10px;overflow:auto"></div>
+    </div>
+    <div class="set-card" style="margin-top:12px">
+      <h3 style="text-align:right">💊 الروشتات والعلاج <span style="font-weight:normal;color:#64748b;font-size:12px">(السجل = عدد الروشتات وتاريخ كل روشتة)</span></h3>
+      <div id="pfPrescriptions"></div>
+    </div>
+  </div>
+</div>
+
+<!-- عرض صورة -->
+<div class="modal" id="imgModal">
+  <div class="modal-box" style="max-width:760px;background:transparent;box-shadow:none;text-align:center">
+    <img id="imgView" style="max-width:100%;border-radius:12px;background:#fff" alt="">
+    <div id="imgViewDate" style="color:#fff;font-size:13px;margin-top:6px"></div>
+    <div style="margin-top:10px"><button class="btn gray" data-close="imgModal">إغلاق</button></div>
+  </div>
+</div>
+
+<div id="acBox"></div>
+<div id="printArea"></div>
+<div id="toast"></div>
+</div><!-- /appRoot -->
+
+<script>
+// ============ الاتصال بـ Supabase ============
+const LS_URL='clinic-sb-url',LS_KEY='clinic-sb-key',LS_NAME='clinic-user-name',LS_CID='clinic-client-id';
+let sb=null,online=false,ch=null;
+let myName=localStorage.getItem(LS_NAME)||'';
+let clientId=localStorage.getItem(LS_CID);
+if(!clientId){clientId=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem(LS_CID,clientId);}
+
+let data={patients:[],visits:[],prescriptions:[],labResults:[],attachments:[],chat:[],
+  settings:{clinicName:'',examPrice:0,followupPrice:0,sources:[],visitPurposes:[],historyOptions:[],chronicOptions:[]}};
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+function num(x){const n=parseFloat(x);return isNaN(n)?0:n;}
+function todayStr(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function nowTime(){return new Date().toTimeString().slice(0,5);}
+function addDays(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fmtDate(ds){try{return new Date(ds+'T00:00:00').toLocaleDateString('ar-EG',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}catch(e){return ds;}}
+function fmtShortDate(ts){try{const d=new Date(ts||Date.now());return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}catch(e){return '';}}
+function fmtTime(t){try{const[h,m]=t.split(':');const d=new Date();d.setHours(+h,+m);return d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});}catch(e){return t;}}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600);}
+
+// ============ إعداد أولي / اتصال Supabase ============
+function boot(){
+  const url=localStorage.getItem(LS_URL),key=localStorage.getItem(LS_KEY);
+  if(!url||!key){$('setupScreen').style.display='block';$('appRoot').style.display='none';return;}
+  $('setupScreen').style.display='none';$('appRoot').style.display='block';
+  initSupabase(url,key);
+}
+$('setupSaveBtn').onclick=()=>{
+  const url=$('setupUrl').value.trim(),key=$('setupKey').value.trim();
+  if(!url||!key){toast('⚠ اكتب الـ URL والمفتاح');return;}
+  localStorage.setItem(LS_URL,url);localStorage.setItem(LS_KEY,key);
+  boot();
+};
+async function initSupabase(url,key){
+  try{
+    sb=window.supabase.createClient(url,key);
+    setStatus('connecting');
+    await loadAll();
+    ensureDefaultsRemote();
+    subscribeRealtime();
+    online=true;setStatus('online');
+    buildForm('regForm','reg');buildForm('pmForm','pm');resetForm('reg');
+    attachPatientAC($('reg_name'));
+    $('chatMyName').value=myName;
+    attachAC($('rxDiag'),candDiag);
+    fillFormSelects();renderAll();
+  }catch(e){console.error(e);online=false;setStatus('error');toast('❌ فشل الاتصال بـ Supabase — تأكدي من الـ URL والمفتاح');}
+}
+function setStatus(state){
+  const el=$('connStatus');
+  if(state==='online'){el.textContent='🟢 متصل — مزامنة حية';el.className='status online';}
+  else if(state==='connecting'){el.textContent='🟡 جاري الاتصال...';el.className='status offline';}
+  else{el.textContent='🔴 غير متصل (اضغطي لإعادة ضبط الاتصال)';el.className='status error';}
+}
+$('connStatus').onclick=()=>showTab('settings',document.querySelector('.tab[data-tab="settings"]'));
+
+async function loadAll(){
+  const tables=[['patients','patients'],['visits','visits'],['prescriptions','prescriptions'],['labResults','lab_results'],['attachments','attachments'],['chat','chat_messages']];
+  for(const[store,table] of tables){
+    const{data:rows,error}=await sb.from(table).select('*');
+    if(error)throw error;
+    data[store]=(rows||[]).map(r=>fromRow(store,r));
+  }
+  const{data:setRows,error:setErr}=await sb.from('settings').select('*');
+  if(setErr)throw setErr;
+  (setRows||[]).forEach(r=>{data.settings[r.key]=r.value;});
+}
+async function ensureDefaultsRemote(){
+  const defaults={
+    clinicName:data.settings.clinicName||'',
+    examPrice:data.settings.examPrice||0,
+    followupPrice:data.settings.followupPrice||0,
+    sources:data.settings.sources&&data.settings.sources.length?data.settings.sources:['فيسبوك','معارف','واحدة من المريضات'],
+    visitPurposes:data.settings.visitPurposes&&data.settings.visitPurposes.length?data.settings.visitPurposes:['كشف نسا','متابعة حمل','تأخر حمل'],
+    historyOptions:data.settings.historyOptions&&data.settings.historyOptions.length?data.settings.historyOptions:['Previous C-Section','Previous Normal Delivery','Miscarriage','Drug Allergy','Previous Surgery','Blood Transfusion','IUD Use','Irregular Periods'],
+    chronicOptions:data.settings.chronicOptions&&data.settings.chronicOptions.length?data.settings.chronicOptions:['Diabetes','Hypertension','Thyroid Disorder','Anemia','Heart Disease','Asthma']
+  };
+  const missing=Object.keys(defaults).filter(k=>data.settings[k]===undefined||data.settings[k]===null);
+  for(const k of missing){data.settings[k]=defaults[k];await sb.from('settings').upsert({key:k,value:defaults[k]});}
+}
+
+// ============ تحويل الصفوف بين JS و Supabase ============
+function fromRow(store,r){
+  if(store==='patients')return{id:r.id,name:r.name,age:r.age,husbandName:r.husband_name,husbandJob:r.husband_job,phone:r.phone,
+    visitPurpose:r.visit_purpose,visitType:r.visit_type,source:r.source,date:r.date,time:r.time?r.time.slice(0,5):'',status:r.status,notes:r.notes,
+    history:r.history||{checked:[],notes:''},chronic:r.chronic||{checked:[],notes:''},createdAt:r.created_at};
+  if(store==='visits')return{id:r.id,patientId:r.patient_id,date:r.date,time:r.time?r.time.slice(0,5):'',visitPurpose:r.visit_purpose,visitType:r.visit_type,notes:r.notes,ts:r.ts};
+  if(store==='prescriptions')return{id:r.id,patientId:r.patient_id,patientName:r.patient_name,patientAge:r.patient_age,diagnosis:r.diagnosis,meds:r.meds||[],date:r.date,ts:r.ts};
+  if(store==='labResults')return{id:r.id,patientId:r.patient_id,testName:r.test_name,result:r.result,notes:r.notes,date:r.date,ts:r.ts};
+  if(store==='attachments')return{id:r.id,patientId:r.patient_id,path:r.path,url:r.url,name:r.name,ts:r.ts};
+  if(store==='chat')return{id:r.id,from:r.from_id,fromName:r.from_name,to:r.to_id,toName:r.to_name,text:r.text,ts:r.ts,type:'pm'};
+  return r;
+}
+function toRow(store,p){
+  if(store==='patients')return{id:p.id,name:p.name,age:p.age?+p.age:null,husband_name:p.husbandName||'',husband_job:p.husbandJob||'',phone:p.phone||'',
+    visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',source:p.source||'',date:p.date||null,time:p.time||null,status:p.status||'في الانتظار',notes:p.notes||'',
+    history:p.history||{checked:[],notes:''},chronic:p.chronic||{checked:[],notes:''},created_at:p.createdAt||Date.now()};
+  if(store==='visits')return{id:p.id,patient_id:p.patientId,date:p.date||null,time:p.time||null,visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',notes:p.notes||'',ts:p.ts||Date.now()};
+  if(store==='prescriptions')return{id:p.id,patient_id:p.patientId,patient_name:p.patientName,patient_age:p.patientAge?+p.patientAge:null,diagnosis:p.diagnosis||'',meds:p.meds||[],date:p.date||null,ts:p.ts||Date.now()};
+  if(store==='labResults')return{id:p.id,patient_id:p.patientId,test_name:p.testName||'',result:p.result||'',notes:p.notes||'',date:p.date||null,ts:p.ts||Date.now()};
+  if(store==='attachments')return{id:p.id,patient_id:p.patientId,path:p.path||'',url:p.url||'',name:p.name||'',ts:p.ts||Date.now()};
+  if(store==='chat')return{id:p.id,from_id:p.from,from_name:p.fromName,to_id:p.to,to_name:p.toName,text:p.text,ts:p.ts||Date.now()};
+  return p;
+}
+const STORE_TABLE={patients:'patients',visits:'visits',prescriptions:'prescriptions',labResults:'lab_results',attachments:'attachments',chat:'chat_messages'};
+
+async function dbPut(store,record){
+  const arr=data[store];const i=arr.findIndex(r=>r.id===record.id);
+  if(i>=0)arr[i]=record;else arr.push(record);
+  renderAll();
+  const{error}=await sb.from(STORE_TABLE[store]).upsert(toRow(store,record));
+  if(error){console.error(error);toast('❌ فشل الحفظ أونلاين — تأكدي من الاتصال');}
+}
+async function dbDel(store,id){
+  data[store]=data[store].filter(r=>r.id!==id);
+  renderAll();
+  const{error}=await sb.from(STORE_TABLE[store]).delete().eq('id',id);
+  if(error){console.error(error);toast('❌ فشل الحذف أونلاين');}
+}
+async function saveSetting(key,value){
+  data.settings[key]=value;
+  const{error}=await sb.from('settings').upsert({key,value});
+  if(error){console.error(error);toast('❌ فشل حفظ الإعداد');}
+  renderAll();
+}
+
+function subscribeRealtime(){
+  ch=sb.channel('clinic-db-changes');
+  [['patients','patients'],['visits','visits'],['prescriptions','prescriptions'],['lab_results','labResults'],['attachments','attachments'],['settings','settings'],['chat_messages','chat']]
+  .forEach(([table,store])=>{
+    ch.on('postgres_changes',{event:'*',schema:'public',table},payload=>{
+      if(table==='settings'){
+        if(payload.eventType==='DELETE')return;
+        data.settings[payload.new.key]=payload.new.value;renderAll();return;
+      }
+      if(payload.eventType==='DELETE'){data[store]=data[store].filter(r=>r.id!==payload.old.id);}
+      else{
+        const rec=fromRow(store,payload.new);
+        const arr=data[store];const i=arr.findIndex(r=>r.id===rec.id);
+        if(i>=0)arr[i]=rec;else arr.push(rec);
+        if(store==='chat'&&payload.eventType==='INSERT')receivePM(rec);
+      }
+      renderAll();
+    });
+  });
+  ch.on('presence',{event:'sync'},()=>{
+    const st=ch.presenceState();
+    users=Object.values(st).flat().filter(u=>u.clientId!==clientId);
+    renderUsers();
+  });
+  ch.subscribe(async status=>{
+    if(status==='SUBSCRIBED'){online=true;setStatus('online');await ch.track({clientId,name:myName||'بدون اسم'});}
+    else if(status==='CHANNEL_ERROR'||status==='CLOSED'||status==='TIMED_OUT'){online=false;setStatus('error');}
+  });
+}
+
+// ============ الفورمات ============
+const FIELDS=[
+ {k:'name',label:'اسم المريضة *',type:'text',ph:'اكتبي الاسم... لو مسجلة قبل كده هتظهر'},
+ {k:'age',label:'السن *',type:'number'},
+ {k:'phone',label:'رقم الموبايل (لتذكير واتساب)',type:'text',ph:'01xxxxxxxxx'},
+ {k:'husbandName',label:'اسم الزوج',type:'text'},
+ {k:'husbandJob',label:'وظيفة الزوج',type:'text'},
+ {k:'visitPurpose',label:'هدف الزيارة *',type:'select',optsKey:'visitPurposes',ph:'-- اختاري --'},
+ {k:'visitType',label:'نوع الزيارة *',type:'select',opts:['كشف','إعادة'],ph:'-- اختاري --'},
+ {k:'source',label:'عرفتنا منين؟',type:'select',optsKey:'sources',ph:'-- اختاري --'},
+ {k:'date',label:'تاريخ الحجز',type:'date'},
+ {k:'time',label:'وقت الحجز',type:'time'},
+ {k:'notes',label:'ملاحظات',type:'textarea'}
+];
+const selectRefs={reg:{},pm:{}};
+function buildForm(containerId,prefix){
+  const c=$(containerId);c.innerHTML='';selectRefs[prefix]={};
+  FIELDS.forEach(f=>{
+    const div=document.createElement('div');div.className='field';
+    let inp;
+    if(f.type==='select'){inp=document.createElement('select');selectRefs[prefix][f.k]={el:inp,spec:f};}
+    else if(f.type==='textarea'){inp=document.createElement('textarea');}
+    else{inp=document.createElement('input');inp.type=f.type;if(f.type==='number'){inp.min='0';inp.step='any';}}
+    inp.id=prefix+'_'+f.k;
+    if(f.ph&&f.type!=='select')inp.placeholder=f.ph;
+    const lab=document.createElement('label');lab.textContent=f.label;lab.htmlFor=inp.id;
+    div.appendChild(lab);div.appendChild(inp);c.appendChild(div);
+    if(f.k==='visitType'&&prefix==='reg')inp.addEventListener('change',updateRegPriceHint);
+  });
+}
+function updateRegPriceHint(){
+  const t=$('reg_visitType').value;
+  const price=t==='كشف'?num(data.settings.examPrice):(t==='إعادة'?num(data.settings.followupPrice):null);
+  $('regPriceHint').textContent=price!==null?`💰 السعر المتوقع حسب الإعدادات: ${price} جنيه`:'';
+}
+function fillFormSelects(){
+  for(const prefix of['reg','pm']){
+    for(const k in selectRefs[prefix]){
+      const{el,spec}=selectRefs[prefix][k];
+      const cur=el.value;
+      const opts=spec.optsKey?(data.settings[spec.optsKey]||[]):spec.opts;
+      el.innerHTML=`<option value="">${spec.ph||'-- اختاري --'}</option>`+opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+      if([...el.options].some(o=>o.value===cur))el.value=cur;
+    }
+  }
+}
+function getForm(prefix){const v={};FIELDS.forEach(f=>{v[f.k]=$(prefix+'_'+f.k).value.trim();});return v;}
+function setForm(prefix,p){FIELDS.forEach(f=>{$(prefix+'_'+f.k).value=p[f.k]??'';});if(prefix==='reg')updateRegPriceHint();}
+function resetForm(prefix,defaults){
+  defaults=defaults||{};
+  FIELDS.forEach(f=>{
+    const el=$(prefix+'_'+f.k);
+    el.value=defaults[f.k]!==undefined?defaults[f.k]:(f.k==='date'?todayStr():f.k==='time'?nowTime():'');
+  });
+  if(prefix==='reg')updateRegPriceHint();
+}
+
+// ============ اقتراح أسماء المريضات في الريسبشن ============
+let linkedPatientId=null,linkedName='';
+function attachPatientAC(input){
+  input.addEventListener('input',()=>showPatientAC(input));
+  input.addEventListener('focus',()=>{if(input.value.trim())showPatientAC(input);});
+  input.addEventListener('blur',()=>setTimeout(hideAC,180));
+  input.addEventListener('keydown',e=>{
+    if($('acBox').style.display!=='block')return;
+    if(e.key==='Enter'){e.preventDefault();if(acItems[acSel>=0?acSel:0])pickPatient(acItems[acSel>=0?acSel:0]);}
+    else if(e.key==='ArrowDown'){e.preventDefault();acSel=Math.min(acSel+1,acItems.length-1);paintAC();}
+    else if(e.key==='ArrowUp'){e.preventDefault();acSel=Math.max(acSel-1,0);paintAC();}
+    else if(e.key==='Escape')hideAC();
+  });
+}
+function showPatientAC(input){
+  const q=input.value.trim();
+  if(linkedPatientId&&q.toLowerCase()===(linkedName||'').toLowerCase()){hideAC();return;}
+  if(!q){hideAC();clearLink();return;}
+  const matches=data.patients.filter(p=>(p.name||'').toLowerCase().includes(q.toLowerCase())).slice(0,10);
+  if(!matches.length){hideAC();clearLink();return;}
+  if(linkedPatientId)clearLink();
+  acItems=matches;acSel=0;acTarget=input;
+  const box=$('acBox');
+  box.innerHTML=matches.map((p,i)=>{
+    const vc=(data.visits||[]).filter(v=>v.patientId===p.id).length;
+    return `<div class="ac-item ${i===0?'sel':''}" data-i="${i}">👤 ${esc(p.name)} <span style="color:#94a3b8;font-size:12px">— ${esc(p.age||'؟')} سنة • ${vc} زيارة</span></div>`;
+  }).join('');
+  box.querySelectorAll('.ac-item').forEach(el=>{
+    el.addEventListener('mousedown',e=>{e.preventDefault();pickPatient(acItems[+el.dataset.i]);});
+  });
+  positionAC(input);
+}
+function pickPatient(p){
+  hideAC();
+  linkedPatientId=p.id;linkedName=p.name;
+  setForm('reg',{name:p.name,age:p.age,phone:p.phone,husbandName:p.husbandName,husbandJob:p.husbandJob,visitPurpose:p.visitPurpose,visitType:'إعادة',source:p.source,date:todayStr(),time:nowTime()});
+  const vc=(data.visits||[]).filter(v=>v.patientId===p.id).length;
+  const banner=$('regLinkBanner');
+  banner.innerHTML=`⚠️ <b>${esc(p.name)}</b> مسجلة قبل كده (${vc} زيارة سابقة) — هيتم التحديث على ملفها مش ملف جديد
+    <button class="btn sm blue" onclick="openPatientFile('${p.id}')">📁 فتح الملف</button>
+    <button class="btn sm gray" onclick="unlinkNew()">➕ دي مريضة جديدة بنفس الاسم</button>`;
+  banner.style.display='flex';
+}
+function clearLink(){linkedPatientId=null;linkedName='';$('regLinkBanner').style.display='none';}
+function unlinkNew(){clearLink();toast('هتتسجل كملف جديد');}
+
+// ============ التسجيل ============
+function saveReception(){
+  const v=getForm('reg');
+  if(!v.name||!v.age||!v.visitPurpose||!v.visitType){toast('⚠ اكملي الحقول المطلوبة (*)');return;}
+  if(linkedPatientId){
+    const old=data.patients.find(x=>x.id===linkedPatientId);
+    if(old){
+      const visit={id:uid(),patientId:old.id,date:v.date,time:v.time,visitPurpose:v.visitPurpose,visitType:v.visitType,notes:v.notes,ts:Date.now()};
+      dbPut('visits',visit);
+      const p={...old,name:v.name,age:v.age,phone:v.phone,husbandName:v.husbandName,husbandJob:v.husbandJob,visitPurpose:v.visitPurpose,visitType:v.visitType,source:v.source,date:v.date,time:v.time,notes:v.notes,status:'في الانتظار'};
+      dbPut('patients',p);
+      toast('✅ تم تحديث ملف المريضة وإضافتها للطابور');
+      resetForm('reg');clearLink();
+      return;
+    }
+  }
+  const p={id:uid(),...v,status:'في الانتظار',createdAt:Date.now(),history:{checked:[],notes:''},chronic:{checked:[],notes:''}};
+  dbPut('patients',p);
+  toast('✅ اتسجلت المريضة واتضافت لطابور الانتظار');
+  resetForm('reg');clearLink();
+}
+
+// ============ طابور الانتظار ============
+let queueShowAll=false;
+function queueList(){
+  const t=todayStr();
+  let list=data.patients.filter(p=>{
+    if(p.status!=='في الانتظار'&&p.status!=='تم الاستدعاء')return false;
+    if(!p.date||p.date>t)return false;
+    return true;
+  });
+  if(!queueShowAll)list=list.filter(p=>p.date===t);
+  return list.sort((a,b)=>{
+    const da=(a.date||'')+(a.time||'99:99'),db=(b.date||'')+(b.time||'99:99');
+    if(da!==db)return da<db?-1:1;
+    return(a.createdAt||0)-(b.createdAt||0);
+  });
+}
+function renderQueue(){
+  const list=queueList();const box=$('queueList');
+  const t=todayStr();
+  const waitingToday=data.patients.filter(p=>p.status==='في الانتظار'&&p.date===t).length;
+  $('queueBadge').textContent=waitingToday||'';
+  if(!list.length){box.innerHTML='<div class="empty">مفيش حد في طابور الانتظار 🎉</div>';return;}
+  box.innerHTML=list.map((p,i)=>`
+    <div class="queue-item ${p.status==='تم الاستدعاء'?'called':''}">
+      <div class="ord">${i+1}</div>
+      <div style="flex:1;min-width:150px">
+        <b>${esc(p.name)}</b> <span class="chip ${p.visitType==='كشف'?'exam':'followup'}" style="margin-right:6px">${esc(p.visitType||'؟')}</span>
+        <div style="font-size:12px;color:#94a3b8">🎯 ${esc(p.visitPurpose||'؟')} — ⏰ ${p.time?fmtTime(p.time):''}</div>
+      </div>
+      <span class="chip ${p.status==='تم الاستدعاء'?'call':'wait'}">${esc(p.status)}</span>
+      <button class="btn sm gray" title="ملف المريضة" onclick="openPatientFile('${p.id}')">📁 ملف</button>
+      ${p.status==='في الانتظار'?`<button class="btn sm blue" onclick="callPatient('${p.id}')">📢 استدعاء</button>`:''}
+      <button class="btn sm primary" onclick="markDone('${p.id}')">✔ تم الكشف</button>
+      <button class="btn sm gray" onclick="openRx('${p.id}')">💊 روشتة</button>
+      <button class="btn sm red" onclick="delPatient('${p.id}')">🗑</button>
+    </div>`).join('');
+}
+function callNext(){
+  const list=queueList().filter(p=>p.status==='في الانتظار');
+  if(!list.length){toast('مفيش حد في الانتظار');return;}
+  callPatient(list[0].id);
+}
+function callPatient(id){
+  const p=data.patients.find(x=>x.id===id);if(!p)return;
+  dbPut('patients',{...p,status:'تم الاستدعاء'});
+  toast('📢 تم استدعاء: '+p.name);
+}
+function markDone(id){
+  const p=data.patients.find(x=>x.id===id);if(!p)return;
+  dbPut('patients',{...p,status:'تم الكشف'});
+  maybeSuggestNextVisit(p);
+}
+function delPatient(id){
+  const p=data.patients.find(x=>x.id===id);if(!p)return;
+  if(!confirm('هتحذفي المريضة "'+p.name+'" وملفها بالكامل؟'))return;
+  dbDel('patients',id);
+  toast('🗑 تم الحذف');
+}
+// ميزة ذكية: اقتراح موعد متابعة تالي لحالات الحمل
+function maybeSuggestNextVisit(p){
+  if(p.visitPurpose==='متابعة حمل'||p.visitPurpose==='تأخر حمل'){
+    const suggested=addDays(todayStr(),p.visitPurpose==='متابعة حمل'?14:21);
+    toast('💡 اقتراح: احجزي موعد متابعة يوم '+suggested);
+  }
+}
+
+// ============ الحجوزات ============
+let apptFilter='upcoming',apptDateVal=todayStr();
+function renderAppointments(){
+  const t=todayStr();
+  let list=data.patients.filter(p=>p.date);
+  if(apptFilter==='upcoming')list=list.filter(p=>p.date>t);
+  else if(apptFilter==='today')list=list.filter(p=>p.date===t);
+  else if(apptFilter==='date')list=list.filter(p=>p.date===apptDateVal);
+  const groups={};list.forEach(p=>{(groups[p.date]=groups[p.date]||[]).push(p);});
+  let dates=Object.keys(groups).sort();
+  if(apptFilter==='all'){
+    dates=dates.sort((a,b)=>{
+      const af=a>=t,bf=b>=t;
+      if(af&&bf)return a<b?-1:1;
+      if(af)return -1;if(bf)return 1;
+      return a>b?-1:1;
+    });
+  }
+  const box=$('apptList');
+  if(!dates.length){box.innerHTML='<div class="empty">مفيش حجوزات في الفترة دي 📭</div>';$('apptCount').textContent='';return;}
+  $('apptCount').textContent=list.length+' حجز';
+  box.innerHTML=dates.map(d=>{
+    const tag=d===t?' — اليوم ⭐':(d===addDays(t,1)?' — غداً':'');
+    const rows=groups[d].sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    return `<div class="day-group">
+      <div class="day-head"><span>📅 ${fmtDate(d)}${tag}</span><span class="cnt">${rows.length}</span>${d<t?'<span style="font-size:12px;color:#94a3b8">(فاتت)</span>':''}</div>
+      ${rows.map(p=>`
+      <div class="appt-row ${d<t?'past':''}">
+        <span class="tm">⏰ ${p.time?fmtTime(p.time):'—'}</span>
+        <b>${esc(p.name)}</b>
+        <span style="color:#64748b;font-size:13px">${esc(p.visitPurpose||'؟')} — ${esc(p.visitType||'؟')}</span>
+        <span class="chip ${p.status==='تم الكشف'?'done':(p.status==='تم الاستدعاء'?'call':'wait')}">${esc(p.status||'في الانتظار')}</span>
+        <span style="flex:1"></span>
+        <button class="btn sm gray" onclick="openPatientFile('${p.id}')">📁 ملف</button>
+        <button class="btn sm gray" onclick="openRx('${p.id}')">💊 روشتة</button>
+        <button class="btn sm blue" onclick="openPatientModal('${p.id}')">✏️ تعديل</button>
+        <button class="btn sm red" onclick="delPatient('${p.id}')">🗑 حذف</button>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+function setApptFilter(f,btn){
+  apptFilter=f;$('apptDate').value='';
+  document.querySelectorAll('.appt-fbtn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderAppointments();
+}
+function onApptDate(v){
+  if(!v){setApptFilter('upcoming',$('apptBtnUp'));return;}
+  apptDateVal=v;apptFilter='date';
+  document.querySelectorAll('.appt-fbtn').forEach(b=>b.classList.remove('active'));
+  renderAppointments();
+}
+
+// ============ نافذة تعديل/إضافة مريضة ============
+let editingId=null;
+function openPatientModal(id,defaults){
+  editingId=id||null;
+  if(id){
+    const p=data.patients.find(x=>x.id===id);if(!p)return;
+    $('pmTitle').textContent='✏️ تعديل بيانات: '+p.name;
+    setForm('pm',p);
+  }else{
+    $('pmTitle').textContent='➕ حجز / تسجيل مريضة جديدة';
+    resetForm('pm',defaults||{});
+  }
+  openModal('patientModal');
+}
+function savePatientModal(){
+  const v=getForm('pm');
+  if(!v.name||!v.age||!v.visitPurpose||!v.visitType){toast('⚠ اكملي الحقول المطلوبة (*)');return;}
+  let p;
+  if(editingId){
+    const old=data.patients.find(x=>x.id===editingId)||{id:editingId,createdAt:Date.now(),status:'في الانتظار',history:{checked:[],notes:''},chronic:{checked:[],notes:''}};
+    p={...old,...v};
+  }else{
+    p={id:uid(),...v,status:'في الانتظار',createdAt:Date.now(),history:{checked:[],notes:''},chronic:{checked:[],notes:''}};
+  }
+  const wasEdit=!!editingId;
+  dbPut('patients',p);
+  closeModal('patientModal');
+  toast(wasEdit?'✅ تم تعديل البيانات':'✅ اتسجلت المريضة واتضافت للطابور');
+  editingId=null;
+}
+
+// ============ سجل المريضات ============
+let patSearch='',patPurpose='',patType='',patDateVal='',patShowAll=false;
+function filteredPatients(){
+  let list=[...data.patients];
+  if(patSearch)list=list.filter(p=>(p.name||'').includes(patSearch)||(p.notes||'').includes(patSearch));
+  if(patDateVal)list=list.filter(p=>p.date===patDateVal);
+  else if(!patShowAll)list=list.filter(p=>p.date===todayStr());
+  if(patPurpose)list=list.filter(p=>p.visitPurpose===patPurpose);
+  if(patType)list=list.filter(p=>p.visitType===patType);
+  return list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+}
+function renderPatients(){
+  const curP=patPurpose,curT=patType;
+  $('patPurpose').innerHTML='<option value="">كل الأهداف</option>'+(data.settings.visitPurposes||[]).map(x=>`<option ${x===curP?'selected':''}>${esc(x)}</option>`).join('');
+  $('patType').innerHTML='<option value="">كل الأنواع</option>'+['كشف','إعادة'].map(x=>`<option ${x===curT?'selected':''}>${esc(x)}</option>`).join('');
+  $('patScopeLbl').textContent=patDateVal?('مريضات يوم '+fmtDate(patDateVal)):(patShowAll?'كل المريضات':'مريضات اليوم');
+  const list=filteredPatients();
+  const tb=$('patBody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" class="empty">مفيش مريضات</td></tr>';return;}
+  tb.innerHTML=list.map((p,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><b style="cursor:pointer;color:#be185d" onclick="openPatientFile('${p.id}')">${esc(p.name)}</b>${(p.chronic&&p.chronic.checked&&p.chronic.checked.length)?`<div style="font-size:11px;color:#b91c1c">🩺 ${esc(p.chronic.checked.join('، '))}</div>`:''}</td>
+    <td>${esc(p.age)}</td><td>${esc(p.visitPurpose||'—')}</td>
+    <td><span class="chip ${p.visitType==='كشف'?'exam':'followup'}">${esc(p.visitType||'—')}</span></td>
+    <td><span class="chip ${p.status==='تم الكشف'?'done':(p.status==='تم الاستدعاء'?'call':'wait')}">${esc(p.status||'—')}</span></td>
+    <td>${esc(p.date||'—')}${p.time?'<br><small>'+fmtTime(p.time)+'</small>':''}</td>
+    <td style="white-space:nowrap">
+      <button class="btn sm gray" title="ملف المريضة" onclick="openPatientFile('${p.id}')">📁</button>
+      <button class="btn sm gray" title="روشتة" onclick="openRx('${p.id}')">💊</button>
+      <button class="btn sm blue" title="تعديل" onclick="openPatientModal('${p.id}')">✏️</button>
+      <button class="btn sm red" title="حذف" onclick="delPatient('${p.id}')">🗑</button>
+    </td></tr>`).join('');
+}
+function resetPatFilters(){patSearch='';patPurpose='';patType='';patDateVal='';patShowAll=false;$('patSearch').value='';$('patDate').value='';$('patShowAll').checked=false;renderPatients();}
+function exportExcel(){
+  const rows=[['م','الاسم','السن','اسم الزوج','وظيفة الزوج','هدف الزيارة','نوع الزيارة','عرفنا منين','تاريخ الحجز','وقت الحجز','الحالة','التاريخ المرضي','الأمراض المزمنة','ملاحظات']];
+  filteredPatients().forEach((p,i)=>rows.push([i+1,p.name,p.age,p.husbandName,p.husbandJob,p.visitPurpose,p.visitType,p.source,p.date,p.time,p.status,(p.history&&p.history.checked||[]).join('; '),(p.chronic&&p.chronic.checked||[]).join('; '),p.notes]));
+  const csv='\uFEFF'+rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='المريضات-'+todayStr()+'.csv';a.click();
+  toast('📤 تم تصدير الملف (يتفتح بـ Excel)');
+}
+
+// ============ ملف المريضة ============
+let filePatient=null;
+function openPatientFile(id){
+  const p=data.patients.find(x=>x.id===id);if(!p)return;
+  filePatient=p;
+  $('pfName').textContent=p.name;
+  refreshFileInfo();
+  renderHistoryChronic();
+  renderPfAttachments();renderPfPrescriptions();renderLabRows();renderLabHistory();
+  const waBtn=$('pfWaBtn');
+  if(p.phone){waBtn.style.display='inline-block';waBtn.onclick=()=>openWhatsapp(p);}else waBtn.style.display='none';
+  const nb=$('pfNextVisitBanner');
+  if(p.visitPurpose==='متابعة حمل'||p.visitPurpose==='تأخر حمل'){
+    const suggested=addDays(p.date||todayStr(),p.visitPurpose==='متابعة حمل'?14:21);
+    nb.style.display='block';
+    nb.innerHTML=`<div class="insight">💡 <span>الحالة دي "${esc(p.visitPurpose)}" — اقتراح موعد المتابعة القادم: <b>${fmtDate(suggested)}</b> <button class="btn sm blue" onclick="quickBookFollowup('${p.id}','${suggested}')">📅 حجز الموعد ده</button></span></div>`;
+  }else{nb.style.display='none';nb.innerHTML='';}
+  openModal('fileModal');
+}
+function quickBookFollowup(id,dateStr){
+  const p=data.patients.find(x=>x.id===id);if(!p)return;
+  openPatientModal(null,{name:p.name,age:p.age,phone:p.phone,husbandName:p.husbandName,husbandJob:p.husbandJob,visitPurpose:p.visitPurpose,visitType:'إعادة',source:p.source,date:dateStr,time:''});
+}
+function openWhatsapp(p){
+  const clean=(p.phone||'').replace(/[^0-9]/g,'').replace(/^0/,'20');
+  const msg=`تذكير من ${data.settings.clinicName||'العيادة'}: معادك يوم ${p.date?fmtDate(p.date):''} الساعة ${p.time?fmtTime(p.time):''}`;
+  window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+function refreshFileInfo(){
+  if(!filePatient)return;
+  const p=filePatient;
+  $('pfName').textContent=p.name;
+  const rxCount=data.prescriptions.filter(r=>r.patientId===p.id).length;
+  const labCount=(data.labResults||[]).filter(l=>l.patientId===p.id).length;
+  $('pfInfo').innerHTML=`السن: <b>${esc(p.age||'؟')}</b> | هدف الزيارة: <b>${esc(p.visitPurpose||'؟')}</b> | نوع الزيارة: <b>${esc(p.visitType||'؟')}</b> | الزوج: <b>${esc(p.husbandName||'—')}${p.husbandJob?' ('+esc(p.husbandJob)+')':''}</b> | آخر زيارة: <b>${p.date?fmtDate(p.date):'—'}</b> | روشتات: <b>${rxCount}</b> | تحاليل: <b>${labCount}</b>`;
+}
+
+// ============ التاريخ المرضي والأمراض المزمنة (مربعات صح) ============
+function renderHistoryChronic(){
+  if(!filePatient)return;
+  const p=filePatient;
+  const hist=p.history||{checked:[],notes:''},chr=p.chronic||{checked:[],notes:''};
+  paintCheckGrid('pfHistoryGrid',data.settings.historyOptions||[],hist.checked||[]);
+  paintCheckGrid('pfChronicGrid',data.settings.chronicOptions||[],chr.checked||[]);
+  $('pfHistoryNotes').value=hist.notes||'';
+  $('pfChronicNotes').value=chr.notes||'';
+}
+function paintCheckGrid(containerId,options,checked){
+  const box=$(containerId);
+  box.innerHTML=options.map(opt=>{
+    const on=checked.includes(opt);
+    return `<label class="check-item ${on?'checked':''}"><input type="checkbox" value="${esc(opt)}" ${on?'checked':''} onchange="this.parentElement.classList.toggle('checked',this.checked)">${esc(opt)}</label>`;
+  }).join('')||'<div style="color:#94a3b8;font-size:13px">No items yet — add one below</div>';
+}
+$('pfHistoryNew').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCheckOption('historyOptions','pfHistoryGrid',$('pfHistoryNew'));}});
+$('pfChronicNew').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCheckOption('chronicOptions','pfChronicGrid',$('pfChronicNew'));}});
+async function addCheckOption(settingKey,gridId,input){
+  const v=input.value.trim();if(!v)return;
+  const opts=data.settings[settingKey]||[];
+  if(!opts.includes(v)){opts.push(v);await saveSetting(settingKey,opts);}
+  input.value='';
+  paintCheckGrid(gridId,data.settings[settingKey]||[],[...(gridId==='pfHistoryGrid'?getCheckedFrom('pfHistoryGrid'):getCheckedFrom('pfChronicGrid')),v]);
+}
+function getCheckedFrom(containerId){
+  return[...document.querySelectorAll('#'+containerId+' input:checked')].map(i=>i.value);
+}
+function savePfMed(){
+  if(!filePatient)return;
+  const history={checked:getCheckedFrom('pfHistoryGrid'),notes:$('pfHistoryNotes').value.trim()};
+  const chronic={checked:getCheckedFrom('pfChronicGrid'),notes:$('pfChronicNotes').value.trim()};
+  dbPut('patients',{...filePatient,history,chronic});
+  filePatient={...filePatient,history,chronic};
+  toast('✅ تم حفظ التاريخ المرضي');
+}
+
+// ============ نتائج التحاليل (كتابة) ============
+function renderLabRows(){
+  $('labRows').innerHTML='';
+  addLabRow();
+}
+function addLabRow(l){
+  l=l||{testName:'',result:'',notes:''};
+  const div=document.createElement('div');div.className='lab-row';
+  div.innerHTML=`<input class="lab-test" placeholder="e.g. CBC" value="${esc(l.testName)}">
+    <input class="lab-result" placeholder="Result" value="${esc(l.result)}">
+    <input class="lab-note" placeholder="Notes (optional)" value="${esc(l.notes)}">
+    <input class="lab-date" type="date" value="${esc(l.date||todayStr())}">
+    <button class="btn primary sm" title="Save" style="padding:6px 0">💾</button>`;
+  div.querySelector('button').onclick=()=>saveLabRow(div);
+  attachAC(div.querySelector('.lab-test'),candLabTests);
+  $('labRows').appendChild(div);
+}
+function saveLabRow(div){
+  const testName=div.querySelector('.lab-test').value.trim();
+  const result=div.querySelector('.lab-result').value.trim();
+  const notes=div.querySelector('.lab-note').value.trim();
+  const date=div.querySelector('.lab-date').value||todayStr();
+  if(!testName||!result){toast('⚠ Enter test name and result');return;}
+  const rec={id:uid(),patientId:filePatient.id,testName,result,notes,date,ts:Date.now()};
+  dbPut('labResults',rec);
+  toast('💾 Lab result saved');
+  div.remove();addLabRow();renderLabHistory();
+}
+function candLabTests(){const s=new Set();data.labResults.forEach(l=>{if(l.testName)s.add(l.testName);});return[...s];}
+function renderLabHistory(){
+  if(!filePatient)return;
+  const box=$('labHistory');
+  const list=(data.labResults||[]).filter(l=>l.patientId===filePatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  if(!list.length){box.innerHTML='<div style="color:#94a3b8;font-size:13px">No lab results yet</div>';return;}
+  box.innerHTML=`<table class="lab-table"><thead><tr><th>Date</th><th>Test</th><th>Result</th><th>Notes</th><th></th></tr></thead><tbody>`+
+    list.map(l=>`<tr><td>${esc(l.date||'')}</td><td><b>${esc(l.testName)}</b></td><td>${esc(l.result)}</td><td>${esc(l.notes||'')}</td>
+      <td><button class="btn sm red" onclick="delLab('${l.id}')">🗑</button></td></tr>`).join('')+`</tbody></table>`;
+}
+function delLab(id){if(!confirm('Delete this lab result?'))return;dbDel('labResults',id);renderLabHistory();}
+
+// ============ الصور (أشعة) عبر Supabase Storage ============
+function handleFiles(files){
+  if(!filePatient)return;
+  [...files].forEach(f=>{
+    if(!f.type.startsWith('image/')){toast('⚠ صور فقط');return;}
+    const reader=new FileReader();
+    reader.onload=()=>resizeImageToBlob(reader.result,1000,0.72,blob=>{
+      if(!blob){toast('⚠ فشل تجهيز الصورة');return;}
+      uploadAttachment(filePatient.id,blob,f.name);
+    });
+    reader.readAsDataURL(f);
+  });
+}
+function resizeImageToBlob(src,maxW,q,cb){
+  const img=new Image();
+  img.onload=()=>{
+    let w=img.width,h=img.height;
+    if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    c.toBlob(blob=>cb(blob),'image/jpeg',q);
+  };
+  img.onerror=()=>toast('⚠ الصورة مش صالحة');
+  img.src=src;
+}
+async function uploadAttachment(patientId,blob,originalName){
+  try{
+    const path=`${patientId}/${uid()}.jpg`;
+    const{error}=await sb.storage.from('attachments').upload(path,blob,{contentType:'image/jpeg'});
+    if(error){toast('❌ فشل رفع الصورة');return;}
+    const{data:urlData}=sb.storage.from('attachments').getPublicUrl(path);
+    const rec={id:uid(),patientId,path,url:urlData.publicUrl,name:(originalName||'صورة').slice(0,80),ts:Date.now()};
+    dbPut('attachments',rec);
+    toast('📷 تم إضافة الصورة لملف المريضة');
+  }catch(e){toast('❌ خطأ في رفع الصورة');}
+}
+function renderPfAttachments(){
+  if(!filePatient)return;
+  const box=$('pfAttachments');
+  const list=(data.attachments||[]).filter(a=>a.patientId===filePatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  box.innerHTML=list.length?list.map(a=>`
+    <div class="att-item">
+      <img src="${esc(a.url)}" onclick="viewImg('${a.id}')" title="${esc(a.name)}" loading="lazy">
+      <div class="att-date">${esc(fmtShortDate(a.ts))}</div>
+      <button class="att-del" onclick="delAtt('${a.id}')">✖</button>
+    </div>`).join(''):'<div style="color:#94a3b8;font-size:13px">مفيش صور لسه — اضغطي "إضافة صورة"</div>';
+}
+function viewImg(id){
+  const a=(data.attachments||[]).find(x=>x.id===id);if(!a)return;
+  $('imgView').src=a.url;
+  $('imgViewDate').textContent='🗓 '+fmtShortDate(a.ts);
+  openModal('imgModal');
+}
+async function delAtt(id){
+  if(!confirm('تحذفي الصورة دي؟'))return;
+  const a=data.attachments.find(x=>x.id===id);
+  if(a&&a.path)await sb.storage.from('attachments').remove([a.path]);
+  dbDel('attachments',id);
+}
+function renderPfPrescriptions(){
+  if(!filePatient)return;
+  const box=$('pfPrescriptions');
+  const list=data.prescriptions.filter(r=>r.patientId===filePatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  box.innerHTML=list.length?list.map(r=>`
+    <div class="rx-hist-item">
+      <span>🗓 ${r.date||''} — ${r.diagnosis?esc(r.diagnosis):'(no diagnosis)'} (${(r.meds||[]).length} meds)</span>
+      <span>
+        <button class="btn sm gray" onclick="loadRxInto('${r.id}')">✏️ فتح</button>
+        <button class="btn sm blue" onclick="printRxById('${r.id}')">🖨 طباعة</button>
+        <button class="btn sm red" onclick="delRxFrom('${r.id}')">🗑</button>
+      </span>
+    </div>`).join(''):'<div style="color:#94a3b8;font-size:13px">مفيش روشتات لسه</div>';
+}
+function delRxFrom(id){if(!confirm('تحذفي الروشتة دي؟'))return;dbDel('prescriptions',id);}
+function loadRxInto(id){
+  const r=data.prescriptions.find(x=>x.id===id);if(!r||!filePatient)return;
+  rxPatient=filePatient;
+  $('rxPatientName').textContent=filePatient.name;
+  $('rxInfo').textContent=`Age: ${filePatient.age||'?'} | Date: ${fmtDate(todayStr())}`;
+  $('rxDiag').value=r.diagnosis||'';
+  $('rxRows').innerHTML='';
+  (r.meds||[]).forEach(m=>addRxRow(m));
+  if(!(r.meds||[]).length)addRxRow();
+  renderRxHistory();
+  openModal('rxModal');
+}
+
+// ============ الإحصائيات ============
+function priceFor(type){return type==='كشف'?num(data.settings.examPrice):(type==='إعادة'?num(data.settings.followupPrice):0);}
+function occurrences(){
+  const list=data.patients.map(p=>({date:p.date,visitType:p.visitType,visitPurpose:p.visitPurpose,patientId:p.id,age:p.age}));
+  (data.visits||[]).forEach(v=>list.push({date:v.date,visitType:v.visitType,visitPurpose:v.visitPurpose,patientId:v.patientId,age:null}));
+  return list.filter(o=>o.date);
+}
+function renderStats(){
+  const t=todayStr();
+  const occ=occurrences();
+  const todayOcc=occ.filter(o=>o.date===t);
+  $('stToday').textContent=todayOcc.length;
+  $('stRevenue').textContent=todayOcc.reduce((s,o)=>s+priceFor(o.visitType),0);
+  const validPatients=data.patients.filter(p=>{if(p.date>t)return p.status==='تم الاستدعاء'||p.status==='تم الكشف';return true;});
+  if($('stTotal'))$('stTotal').textContent=validPatients.length;
+  $('stWait').textContent=data.patients.filter(p=>(p.status==='في الانتظار'||p.status==='تم الاستدعاء')&&p.date===t).length;
+}
+function ageBucket(age){
+  const n=parseInt(age,10);
+  if(isNaN(n))return'غير محدد';
+  if(n<=10)return'0-10';if(n<=20)return'11-20';if(n<=30)return'21-30';if(n<=40)return'31-40';
+  if(n<=50)return'41-50';if(n<=60)return'51-60';if(n<=70)return'61-70';return'71+';
+}
+function renderStatsPage(){
+  const t=todayStr();
+  const occ=occurrences();
+  const validPatients=data.patients.filter(p=>{if(p.date>t)return p.status==='تم الاستدعاء'||p.status==='تم الكشف';return true;});
+
+  const totalPatients=validPatients.length;
+  const totalRevenue=occ.reduce((s,o)=>s+priceFor(o.visitType),0);
+  const totalRx=data.prescriptions.length;
+  const examCount=validPatients.filter(p=>p.visitType==='كشف').length;
+  const followCount=validPatients.filter(p=>p.visitType==='إعادة').length;
+  const purposeCounts={};validPatients.forEach(p=>{if(p.visitPurpose)purposeCounts[p.visitPurpose]=(purposeCounts[p.visitPurpose]||0)+1;});
+  let topPurpose='—',topPurposeN=0;
+  for(const k in purposeCounts){if(purposeCounts[k]>topPurposeN){topPurpose=k;topPurposeN=purposeCounts[k];}}
+  $('statsGeneral').innerHTML=`
+    <div class="stat"><div class="num">${totalPatients}</div><div class="lbl">إجمالي الحالات كليًا</div></div>
+    <div class="stat"><div class="num">${totalRevenue}</div><div class="lbl">إجمالي الإيراد المتوقع كليًا (ج)</div></div>
+    <div class="stat"><div class="num">${examCount}/${followCount}</div><div class="lbl">كشف/إعادة</div></div>
+    <div class="stat"><div class="num">${totalRx}</div><div class="lbl">إجمالي الروشتات</div></div>
+    <div class="stat"><div class="num" style="font-size:16px">${esc(topPurpose)}</div><div class="lbl">الأكثر تكرارًا (${topPurposeN})</div></div>`;
+
+  const insightBox=$('statsInsight');
+  const weekAgo=addDays(t,-7);
+  const weekOcc=occ.filter(o=>o.date>=weekAgo&&o.date<=t);
+  const weekPurp={};weekOcc.forEach(o=>{if(o.visitPurpose)weekPurp[o.visitPurpose]=(weekPurp[o.visitPurpose]||0)+1;});
+  let bestW='—',bestWN=0;for(const k in weekPurp){if(weekPurp[k]>bestWN){bestW=k;bestWN=weekPurp[k];}}
+  insightBox.innerHTML=bestWN?`💡 <span>خلال آخر 7 أيام، أكتر سبب زيارة كان <b>${esc(bestW)}</b> (${bestWN} حالة) — إجمالي الإيراد المتوقع في نفس الفترة: <b>${weekOcc.reduce((s,o)=>s+priceFor(o.visitType),0)} ج</b></span>`:'مفيش بيانات كافية للتحليل الأسبوعي لسه';
+
+  const byDay={};
+  occ.forEach(o=>{
+    if(!byDay[o.date])byDay[o.date]={count:0,exam:0,followup:0,rev:0};
+    byDay[o.date].count++;
+    if(o.visitType==='كشف')byDay[o.date].exam++;else if(o.visitType==='إعادة')byDay[o.date].followup++;
+    byDay[o.date].rev+=priceFor(o.visitType);
+  });
+  const days=Object.keys(byDay).sort((a,b)=>b<a?-1:1);
+  $('statsDayBody').innerHTML=days.length?days.map(d=>`<tr>
+      <td>${esc(fmtDate(d))}${d===t?' <span class="chip call">اليوم</span>':''}</td>
+      <td>${byDay[d].count}</td><td>${byDay[d].exam}</td><td>${byDay[d].followup}</td><td>${byDay[d].rev}</td>
+    </tr>`).join(''):'<tr><td colspan="5" class="empty">مفيش بيانات لسه</td></tr>';
+
+  const purposeRows=Object.keys(purposeCounts).sort((a,b)=>purposeCounts[b]-purposeCounts[a]);
+  $('statsPurpose').innerHTML=purposeRows.length?`<table><thead><tr><th>هدف الزيارة</th><th>عدد الحالات</th></tr></thead><tbody>`+
+    purposeRows.map(k=>`<tr><td>${esc(k)}</td><td>${purposeCounts[k]}</td></tr>`).join('')+`</tbody></table>`:'<div class="empty">مفيش بيانات لسه</div>';
+
+  const visitCountByPatient={};
+  validPatients.forEach(p=>{visitCountByPatient[p.id]=1+(data.visits||[]).filter(v=>v.patientId===p.id).length;});
+  const buckets={};
+  validPatients.forEach(p=>{
+    const b=ageBucket(p.age);
+    if(!buckets[b])buckets[b]={total:0,returning:0};
+    buckets[b].total++;
+    if(visitCountByPatient[p.id]>1)buckets[b].returning++;
+  });
+  const order=['0-10','11-20','21-30','31-40','41-50','51-60','61-70','71+','غير محدد'];
+  const bkeys=Object.keys(buckets).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  let best=null,worst=null;
+  bkeys.forEach(k=>{
+    if(!buckets[k].total)return;
+    const rate=buckets[k].returning/buckets[k].total*100;
+    if(!best||rate>best.rate)best={k,rate};
+    if(!worst||rate<worst.rate)worst={k,rate};
+  });
+  $('statsAgeSummary').innerHTML=bkeys.length?`
+    <div>🥇 أعلى نسبة ارتداد: <b>${best?esc(best.k)+' سنة ('+best.rate.toFixed(0)+'%)':'—'}</b></div>
+    <div>🥉 أقل نسبة ارتداد: <b>${worst?esc(worst.k)+' سنة ('+worst.rate.toFixed(0)+'%)':'—'}</b></div>`:'مفيش بيانات كافية لسه';
+  $('statsAgeBody').innerHTML=bkeys.length?bkeys.map(k=>{
+    const b=buckets[k];const rate=b.total?(b.returning/b.total*100):0;
+    const tag=best&&best.k===k?' 🥇':(worst&&worst.k===k?' 🥉':'');
+    return`<tr><td>${esc(k)}${tag}</td><td>${b.total}</td><td>${b.returning}</td><td>${rate.toFixed(0)}%</td></tr>`;
+  }).join(''):'<tr><td colspan="4" class="empty">مفيش بيانات لسه</td></tr>';
+}
+
+// ============ الشات الخاص ============
+let users=[],activePeer=null,unread={};
+function renderUsers(){
+  const box=$('usersList');
+  if(!online){box.innerHTML='<li class="empty" style="padding:12px">الشات متاح لما تكوني متصلة بـ Supabase</li>';renderChatBadge();return;}
+  if(!users.length){box.innerHTML='<li class="empty" style="padding:12px">مفيش حد تاني متصل دلوقتي</li>';renderChatBadge();return;}
+  box.innerHTML=users.map(u=>`
+    <li class="user-item ${activePeer&&activePeer.clientId===u.clientId?'active':''}" onclick="openConvo('${u.clientId}')">
+      <span class="dot"></span><span style="flex:1">${esc(u.name)}</span>
+      ${unread[u.clientId]?`<span class="badge">${unread[u.clientId]}</span>`:''}
+    </li>`).join('');
+  renderChatBadge();
+}
+function renderChatBadge(){
+  const n=Object.values(unread).reduce((a,b)=>a+b,0);
+  $('chatBadge').textContent=n||'';
+}
+function openConvo(cid){
+  const u=users.find(x=>x.clientId===cid);if(!u)return;
+  activePeer=u;unread[cid]=0;
+  $('convoHead').textContent='💬 المحادثة مع: '+u.name;
+  renderMsgs();renderUsers();$('msgInput').focus();
+}
+function pairMsgs(cid){
+  return data.chat.filter(m=>(m.from===clientId&&m.to===cid)||(m.from===cid&&m.to===clientId)).sort((a,b)=>(a.ts||0)-(b.ts||0));
+}
+function renderMsgs(){
+  const box=$('msgs');
+  if(!activePeer){box.innerHTML='<div class="empty">اختاري حد من المتصلين عشان تبدأوا محادثة خاصة 👈</div>';return;}
+  const list=pairMsgs(activePeer.clientId);
+  box.innerHTML=list.map(msgHTML).join('')||'<div class="empty">ابدأي المحادثة برسالة 👋</div>';
+  box.scrollTop=box.scrollHeight;
+}
+function msgHTML(m){
+  const mine=m.from===clientId;
+  return `<div class="msg ${mine?'me':'them'}">${esc(m.text)}<span class="mt">${esc(mine?'أنا':(m.fromName||''))} • ${new Date(m.ts||Date.now()).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span></div>`;
+}
+function sendMsg(){
+  const inp=$('msgInput');const text=inp.value.trim();
+  if(!text)return;
+  if(!activePeer){toast('اختاري حد الأول من القائمة');return;}
+  const m={id:uid(),from:clientId,fromName:myName||'بدون اسم',to:activePeer.clientId,toName:activePeer.name,text,ts:Date.now()};
+  dbPut('chat',m);
+  inp.value='';renderMsgs();
+}
+function receivePM(m){
+  if(m.from===clientId||m.to===clientId){
+    if(activePeer&&activePeer.clientId===m.from){renderMsgs();}
+    else if(m.to===clientId){unread[m.from]=(unread[m.from]||0)+1;beep();}
+    renderUsers();
+  }
+}
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.value=.08;o.start();o.stop(c.currentTime+.15);}catch(e){}}
+function saveMyName(){
+  myName=$('chatMyName').value.trim();
+  localStorage.setItem(LS_NAME,myName);
+  if(online&&ch)ch.track({clientId,name:myName||'بدون اسم'});
+  toast('✅ تم حفظ الاسم');
+}
+
+// ============ الإعدادات ============
+function renderSettings(){
+  $('clinicName').value=data.settings.clinicName||'';
+  $('examPrice').value=data.settings.examPrice||0;
+  $('followupPrice').value=data.settings.followupPrice||0;
+  $('cfgUrl').value=localStorage.getItem(LS_URL)||'';
+  $('cfgKey').value=localStorage.getItem(LS_KEY)||'';
+  ['visitPurposes','sources','historyOptions','chronicOptions'].forEach(k=>{
+    $('list-'+k).innerHTML=(data.settings[k]||[]).map((v,i)=>`<li>${esc(v)}<button onclick="delSetting('${k}',${i})">✖</button></li>`).join('')||'<li style="color:#94a3b8">فاضي</li>';
+  });
+  fillFormSelects();
+}
+async function addSetting(k,inputId){
+  const inp=$(inputId);const v=inp.value.trim();if(!v)return;
+  const arr=data.settings[k]||[];
+  if(arr.includes(v)){toast('موجود قبل كده');return;}
+  arr.push(v);
+  await saveSetting(k,arr);
+  inp.value='';toast('✅ تم الإضافة');
+}
+async function delSetting(k,i){
+  const arr=[...(data.settings[k]||[])];arr.splice(i,1);
+  await saveSetting(k,arr);
+}
+async function saveClinicName(){await saveSetting('clinicName',$('clinicName').value.trim());toast('✅ تم الحفظ');}
+async function saveExamPrice(){await saveSetting('examPrice',num($('examPrice').value));toast('✅ تم الحفظ');updateRegPriceHint();}
+async function saveFollowupPrice(){await saveSetting('followupPrice',num($('followupPrice').value));toast('✅ تم الحفظ');updateRegPriceHint();}
+
+function exportBackup(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download='نسخة-احتياطية-العيادة-'+todayStr()+'.json';a.click();
+  toast('📤 تم تصدير البيانات');
+}
+
+// ============ الروشتة (إنجليزي) ============
+let rxPatient=null;
+function openRx(id){
+  const p=data.patients.find(x=>x.id===id);if(!p)return;
+  rxPatient=p;
+  $('rxPatientName').textContent=p.name;
+  $('rxInfo').textContent=`Age: ${p.age||'?'} | Date: ${fmtDate(todayStr())}${(p.chronic&&p.chronic.checked&&p.chronic.checked.length)?' | Chronic: '+p.chronic.checked.join(', '):''}`;
+  $('rxDiag').value='';$('rxRows').innerHTML='';
+  addRxRow();addRxRow();addRxRow();
+  renderRxHistory();
+  openModal('rxModal');
+  setTimeout(()=>{const f=document.querySelector('#rxRows .rx-med');if(f)f.focus();},150);
+}
+function addRxRow(med){
+  med=med||{name:'',dose:'',note:''};
+  const div=document.createElement('div');div.className='rx-row';
+  div.innerHTML=`<input class="rx-med" placeholder="Medication name" value="${esc(med.name)}">
+    <input class="rx-dose" placeholder="Dosage" value="${esc(med.dose)}">
+    <input class="rx-note" placeholder="Notes (optional)" value="${esc(med.note)}">
+    <button class="btn red sm" title="Remove">✖</button>`;
+  div.querySelector('button').onclick=()=>div.remove();
+  attachAC(div.querySelector('.rx-med'),candMeds);
+  attachAC(div.querySelector('.rx-dose'),candDose);
+  $('rxRows').appendChild(div);
+}
+function candMeds(){const s=new Set();data.prescriptions.forEach(p=>(p.meds||[]).forEach(m=>{if(m.name)s.add(m.name);}));return[...s];}
+function candDose(){const s=new Set();data.prescriptions.forEach(p=>(p.meds||[]).forEach(m=>{if(m.dose)s.add(m.dose);}));return[...s];}
+function candDiag(){const s=new Set();data.prescriptions.forEach(p=>{if(p.diagnosis)s.add(p.diagnosis);});return[...s];}
+function collectRx(){
+  const meds=[...document.querySelectorAll('#rxRows .rx-row')].map(r=>({
+    name:r.querySelector('.rx-med').value.trim(),
+    dose:r.querySelector('.rx-dose').value.trim(),
+    note:r.querySelector('.rx-note').value.trim()
+  })).filter(m=>m.name||m.dose);
+  return{diagnosis:$('rxDiag').value.trim(),meds};
+}
+function saveRx(andPrint){
+  const{diagnosis,meds}=collectRx();
+  if(!diagnosis&&!meds.length){toast('⚠ Enter a diagnosis or at least one medication');return;}
+  const rx={id:uid(),patientId:rxPatient.id,patientName:rxPatient.name,patientAge:rxPatient.age,diagnosis,meds,ts:Date.now(),date:todayStr()};
+  dbPut('prescriptions',rx);
+  toast('💾 Prescription saved to patient file');
+  renderRxHistory();
+  if(andPrint)printRx(rx);
+}
+function renderRxHistory(){
+  const box=$('rxHistory');
+  if(!rxPatient){box.innerHTML='';return;}
+  const list=data.prescriptions.filter(r=>r.patientId===rxPatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0));
+  box.innerHTML=list.length?`<div class="rx-hist"><b style="font-size:13px">📜 Previous prescriptions:</b>`+list.map(r=>`
+    <div class="rx-hist-item">
+      <span>🗓 ${r.date||''} — ${r.diagnosis?esc(r.diagnosis):'(no diagnosis)'} (${(r.meds||[]).length} meds)</span>
+      <span>
+        <button class="btn sm gray" onclick="loadRx('${r.id}')">✏️ Open</button>
+        <button class="btn sm blue" onclick="printRxById('${r.id}')">🖨 Print</button>
+        <button class="btn sm red" onclick="delRx('${r.id}')">🗑</button>
+      </span>
+    </div>`).join('')+`</div>`:'';
+}
+function loadRx(id){
+  const r=data.prescriptions.find(x=>x.id===id);if(!r)return;
+  $('rxDiag').value=r.diagnosis||'';
+  $('rxRows').innerHTML='';
+  (r.meds||[]).forEach(m=>addRxRow(m));
+  if(!(r.meds||[]).length)addRxRow();
+  toast('Prescription loaded — edit and save');
+}
+function delRx(id){
+  if(!confirm('Delete this prescription?'))return;
+  dbDel('prescriptions',id);
+  renderRxHistory();
+}
+function printRxById(id){const r=data.prescriptions.find(x=>x.id===id);if(r)printRx(r);}
+function printRx(rx){
+  const clinic=data.settings.clinicName||'Clinic';
+  $('printArea').innerHTML=`<div class="paper">
+    <div class="ph"><h1>${esc(clinic)}</h1></div>
+    <div class="pmeta"><span>Name: <b>${esc(rx.patientName)}</b></span><span>Date: ${fmtDate(rx.date||todayStr())}</span></div>
+    ${rx.diagnosis?`<div class="diag">Diagnosis: <b>${esc(rx.diagnosis)}</b></div>`:''}
+    <ol>${rx.meds.map(m=>`<li><b>${esc(m.name)}</b>${m.dose?` — ${esc(m.dose)}`:''}${m.note?` <i>(${esc(m.note)})</i>`:''}</li>`).join('')}</ol>
+    <div class="sign" style="justify-content:center;text-align:center"><span>Wishing you a speedy recovery 🌿</span></div>
+  </div>`;
+  setTimeout(()=>window.print(),100);
+}
+
+// ============ الاقتراحات التلقائية (أوتوكومبليت) ============
+let acItems=[],acSel=-1,acTarget=null;
+function attachAC(input,getter){
+  input.addEventListener('input',()=>showAC(input,getter));
+  input.addEventListener('focus',()=>{if(input.value.trim())showAC(input,getter);});
+  input.addEventListener('blur',()=>setTimeout(hideAC,150));
+  input.addEventListener('keydown',e=>{
+    const box=$('acBox');
+    if(box.style.display!=='block')return;
+    if(e.key==='ArrowDown'){e.preventDefault();acSel=Math.min(acSel+1,acItems.length-1);paintAC();}
+    else if(e.key==='ArrowUp'){e.preventDefault();acSel=Math.max(acSel-1,0);paintAC();}
+    else if(e.key==='Enter'||e.key==='Tab'){if(acSel>=0&&acItems[acSel]){e.preventDefault();pickAC(acItems[acSel]);}}
+    else if(e.key==='Escape'){hideAC();}
+  });
+}
+function showAC(input,getter){
+  const q=input.value.trim().toLowerCase();
+  if(!q){hideAC();return;}
+  acItems=getter().filter(x=>x.toLowerCase().includes(q))
+    .sort((a,b)=>{
+      const ai=a.toLowerCase().indexOf(q),bi=b.toLowerCase().indexOf(q);
+      return(ai-bi)||(a.length-b.length);
+    }).slice(0,10);
+  if(!acItems.length){hideAC();return;}
+  acTarget=input;acSel=0;
+  const box=$('acBox');
+  box.innerHTML=acItems.map((x,i)=>`<div class="ac-item ${i===0?'sel':''}" data-i="${i}">${esc(x)}</div>`).join('');
+  box.querySelectorAll('.ac-item').forEach(el=>{
+    el.addEventListener('mousedown',e=>{e.preventDefault();pickAC(acItems[+el.dataset.i]);});
+  });
+  positionAC(input);
+}
+function positionAC(input){
+  const box=$('acBox');
+  const r=input.getBoundingClientRect();
+  box.style.display='block';
+  box.style.top=(r.bottom+3)+'px';
+  box.style.left='auto';
+  box.style.right=(window.innerWidth-r.right)+'px';
+  const w=Math.max(r.width,230);
+  box.style.minWidth=w+'px';box.style.maxWidth=Math.max(w,360)+'px';
+}
+function paintAC(){
+  $('acBox').querySelectorAll('.ac-item').forEach((el,i)=>el.classList.toggle('sel',i===acSel));
+}
+function pickAC(v){if(acTarget){acTarget.value=v;acTarget.focus();}hideAC();}
+function hideAC(){$('acBox').style.display='none';acItems=[];acSel=-1;}
+
+// ============ عام ============
+function openModal(id){$(id).classList.add('open');}
+function closeModal(id){$(id).classList.remove('open');}
+function showTab(name,btn){
+  document.querySelectorAll('main > section').forEach(s=>s.hidden=true);
+  $('tab-'+name).hidden=false;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(name==='chat'){renderUsers();renderMsgs();}
+  if(name==='stats'){renderStatsPage();}
+}
+function renderAll(){
+  if(!$('appRoot')||$('appRoot').style.display==='none')return;
+  renderStats();renderQueue();renderAppointments();renderPatients();renderSettings();renderUsers();renderChatBadge();
+  if($('fileModal').classList.contains('open')&&filePatient){
+    const fresh=data.patients.find(x=>x.id===filePatient.id);
+    if(fresh){filePatient=fresh;refreshFileInfo();renderPfAttachments();renderPfPrescriptions();renderLabHistory();}
+  }
+  if($('rxModal').classList.contains('open'))renderRxHistory();
+  if(!$('tab-stats').hidden)renderStatsPage();
+}
+
+// ============ التشغيل ============
+window.addEventListener('load',()=>{
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.tab,b));
+  document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));
+  document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+  $('regSaveBtn').onclick=saveReception;
+  $('regClearBtn').onclick=()=>{resetForm('reg');clearLink();};
+  $('callNextBtn').onclick=callNext;
+  $('queueRefreshBtn').onclick=renderQueue;
+  $('queueAllDays').onchange=e=>{queueShowAll=e.target.checked;renderQueue();};
+
+  $('apptBtnUp').onclick=e=>setApptFilter('upcoming',e.currentTarget);
+  $('apptBtnToday').onclick=e=>setApptFilter('today',e.currentTarget);
+  $('apptBtnAll').onclick=e=>setApptFilter('all',e.currentTarget);
+  $('apptDate').onchange=e=>onApptDate(e.target.value);
+  $('newApptBtn').onclick=()=>openPatientModal(null,{date:apptFilter==='date'?apptDateVal:todayStr()});
+
+  $('patSearch').oninput=e=>{patSearch=e.target.value.trim();renderPatients();};
+  $('patDate').onchange=e=>{patDateVal=e.target.value;renderPatients();};
+  $('patPurpose').onchange=e=>{patPurpose=e.target.value;renderPatients();};
+  $('patType').onchange=e=>{patType=e.target.value;renderPatients();};
+  $('patShowAll').onchange=e=>{patShowAll=e.target.checked;renderPatients();};
+  $('patResetBtn').onclick=resetPatFilters;
+  $('patExportBtn').onclick=exportExcel;
+
+  $('pfSaveMed').onclick=savePfMed;
+  $('pfFileInput').onchange=e=>{handleFiles(e.target.files);e.target.value='';};
+  $('pfOpenRx').onclick=()=>{if(filePatient)openRx(filePatient.id);};
+  $('labAddRowBtn').onclick=()=>addLabRow();
+
+  $('saveNameBtn').onclick=saveMyName;
+  $('sendBtn').onclick=sendMsg;
+  $('msgInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendMsg();});
+
+  $('saveClinicBtn').onclick=saveClinicName;
+  $('saveExamPriceBtn').onclick=saveExamPrice;
+  $('saveFollowupPriceBtn').onclick=saveFollowupPrice;
+  $('addPurposeBtn').onclick=()=>addSetting('visitPurposes','newPurpose');
+  $('addSourceBtn').onclick=()=>addSetting('sources','newSource');
+  $('addHistOptBtn').onclick=()=>addSetting('historyOptions','newHistOpt');
+  $('addChronicOptBtn').onclick=()=>addSetting('chronicOptions','newChronicOpt');
+  [['newPurpose','visitPurposes'],['newSource','sources'],['newHistOpt','historyOptions'],['newChronicOpt','chronicOptions']].forEach(([id,k])=>{
+    $(id).addEventListener('keydown',e=>{if(e.key==='Enter')addSetting(k,id);});
+  });
+  $('saveCfgBtn').onclick=()=>{
+    const url=$('cfgUrl').value.trim(),key=$('cfgKey').value.trim();
+    if(!url||!key){toast('⚠ اكتبي الـ URL والمفتاح');return;}
+    localStorage.setItem(LS_URL,url);localStorage.setItem(LS_KEY,key);
+    toast('🔄 جاري إعادة الاتصال...');
+    location.reload();
+  };
+  $('exportBackupBtn').onclick=exportBackup;
+
+  $('pmSaveBtn').onclick=savePatientModal;
+  $('rxAddRowBtn').onclick=()=>addRxRow();
+  $('rxSaveBtn').onclick=()=>saveRx(false);
+  $('rxSavePrintBtn').onclick=()=>saveRx(true);
+
+  boot();
+});
+</script>
+</body>
+</html>
