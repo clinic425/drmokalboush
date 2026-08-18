@@ -73,13 +73,12 @@ tr:hover td{background:#fdf2f8}
 .user-item.active{background:#fdf2f8;border-color:#be185d}
 .dot{width:10px;height:10px;border-radius:50%;background:#22c55e;flex:none}
 .convo{background:#fff;border-radius:14px;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:hidden}
-#convoHead{padding:12px 16px;border-bottom:1px solid #e2e8f0;font-weight:800;background:#f8fafc;display:flex;justify-content:space-between;align-items:center;gap:8px}
+#convoHead{padding:12px 16px;border-bottom:1px solid #e2e8f0;font-weight:800;background:#f8fafc}
 #msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:#f8fafc}
-.msg{max-width:72%;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.6;word-wrap:break-word;white-space:pre-wrap;position:relative}
+.msg{max-width:72%;padding:9px 13px;border-radius:14px;font-size:14px;line-height:1.6;word-wrap:break-word;white-space:pre-wrap}
 .msg.me{align-self:flex-start;background:#be185d;color:#fff;border-bottom-right-radius:4px}
 .msg.them{align-self:flex-end;background:#fff;border:1px solid #e2e8f0;border-bottom-left-radius:4px}
 .msg .mt{display:block;font-size:10px;opacity:.65;margin-top:3px}
-.msg .mdel{border:0;background:rgba(0,0,0,.12);color:inherit;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;position:absolute;top:-6px;left:-6px}
 .msg-input{display:flex;gap:8px;padding:12px;border-top:1px solid #e2e8f0}
 .msg-input input{flex:1;padding:10px;border:1.5px solid #cbd5e1;border-radius:10px;font-family:inherit}
 .set-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
@@ -117,6 +116,7 @@ tr:hover td{background:#fdf2f8}
 .paper ol{padding-inline-start:22px;font-size:16px;line-height:2.2}
 .paper .sign{margin-top:44px;display:flex;justify-content:space-between;font-size:14px;flex-wrap:wrap;gap:10px}
 @media print{ body>*{display:none!important} #printArea{display:block!important} }
+/* بنود اختيار (مربعات صح) للتاريخ المرضي والأمراض المزمنة */
 .check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px}
 .check-item{display:flex;align-items:center;gap:7px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:9px;padding:8px 10px;cursor:pointer;font-size:13.5px;transition:.15s}
 .check-item:hover{border-color:#f9a8d4}
@@ -130,15 +130,6 @@ tr:hover td{background:#fdf2f8}
 .setup-box h2{color:#9d174d;margin-bottom:6px}
 .setup-box p{color:#64748b;font-size:13.5px;margin-bottom:16px;line-height:1.7}
 .setup-box .field{margin-bottom:12px}
-.login-box{max-width:400px;margin:80px auto;background:#fff;border-radius:16px;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.15);text-align:center}
-.login-box h2{color:#9d174d;margin-bottom:6px}
-.login-box p{color:#64748b;font-size:13px;margin-bottom:18px}
-.login-box .field{text-align:right;margin-bottom:12px}
-.login-err{color:#dc2626;font-size:13px;margin-top:8px;min-height:18px}
-.userrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f8fafc;border-radius:9px;padding:8px 10px;margin-bottom:6px}
-.userrow b{flex:1;min-width:90px}
-.userrow .chip.blocked{background:#fee2e2;color:#991b1b}
-.userrow .chip.active2{background:#dcfce7;color:#15803d}
 @media(max-width:800px){
   .chat-wrap{grid-template-columns:1fr;height:auto}
   .convo{height:62vh}
@@ -152,39 +143,25 @@ tr:hover td{background:#fdf2f8}
 </head>
 <body>
 
-<!-- شاشة إعداد الاتصال بـ Supabase (تظهر أول مرة فقط) -->
-<div id="setupScreen" style="display:none">
-  <div class="setup-box">
-    <h2>⚕ ربط النظام بـ Supabase</h2>
-    <p>عشان يشتغل النظام أونلاين على كل الأجهزة، هتحتاج تدخل بيانات مشروعك على Supabase مرة واحدة بس (هتتحفظ في المتصفح ده). لو لسه معملتش الجداول، شغّل ملف <b>supabase-schema.sql</b> في SQL Editor بمشروعك الأول.</p>
-    <div class="field"><label>Project URL</label><input id="setupUrl" placeholder="https://xxxxx.supabase.co"></div>
-    <div class="field"><label>anon public key</label><input id="setupKey" placeholder="eyJhbGciOi..."></div>
-    <button class="btn primary" id="setupSaveBtn" style="width:100%">🔗 اتصال وبدء التشغيل</button>
-    <p style="margin-top:10px;font-size:12px">تقدر تلاقي القيمتين دي في مشروعك على supabase.com تحت: Project Settings ← API</p>
-  </div>
-</div>
-
-<!-- شاشة خطأ الاتصال -->
-<div id="connErrorScreen" style="display:none">
-  <div class="setup-box">
-    <h2>⚠ في مشكلة في الاتصال</h2>
-    <p id="connErrorMsg">مش قادرين نتصل بقاعدة البيانات. الأسباب الشائعة:<br>
-    1) لسه ما اتشغّلش ملف <b>add-users-table.sql</b> في Supabase SQL Editor.<br>
-    2) مشكلة في الإنترنت أو في مشروع Supabase نفسه.</p>
-    <button class="btn primary" id="connRetryBtn" style="width:100%">🔄 إعادة المحاولة</button>
-    <p style="margin-top:14px;font-size:12px">لو المشكلة استمرت، افتحي "أدوات المطور" في المتصفح (F12) وابعتيلي رسالة الخطأ اللي في تبويب Console.</p>
+<!-- شاشة خطأ اتصال — تظهر برة أي حاوية تانية عشان متختفيش لو appRoot مقفول -->
+<div id="globalError" style="display:none;position:fixed;inset:0;background:#fef2f2;z-index:99999;align-items:center;justify-content:center;padding:20px">
+  <div style="max-width:560px;background:#fff;border:2px solid #fecaca;border-radius:16px;padding:26px;box-shadow:0 10px 40px rgba(0,0,0,.15);direction:rtl">
+    <h2 style="color:#b91c1c;margin-bottom:10px">⚠ في مشكلة في الاتصال بقاعدة البيانات</h2>
+    <p style="font-size:13.5px;color:#475569;margin-bottom:12px">تأكدي إنك متصلة بالإنترنت، وإنك شغّلتي ملف <b>supabase-schema.sql</b> كاملاً في مشروعك على Supabase (SQL Editor). لو المشكلة استمرت، ابعتي نص الرسالة دي:</p>
+    <pre id="globalErrorMsg" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:12px;white-space:pre-wrap;word-break:break-word;max-height:180px;overflow:auto;direction:ltr;text-align:left"></pre>
+    <button class="btn primary" style="margin-top:14px;width:100%" onclick="location.reload()">🔄 إعادة المحاولة</button>
   </div>
 </div>
 
 <!-- شاشة تسجيل الدخول -->
 <div id="loginScreen" style="display:none">
-  <div class="login-box">
-    <h2>🔒 تسجيل الدخول</h2>
-    <p>ادخلي اسم المستخدم وكلمة المرور للدخول على نظام العيادة</p>
+  <div class="setup-box">
+    <h2>⚕ تسجيل الدخول</h2>
+    <p>ادخلي اسم المستخدم وكلمة المرور بتاعتك عشان تدخلي نظام العيادة.</p>
     <div class="field"><label>اسم المستخدم</label><input id="loginUser" placeholder="اسم المستخدم"></div>
     <div class="field"><label>كلمة المرور</label><input id="loginPass" type="password" placeholder="كلمة المرور"></div>
-    <button class="btn primary" id="loginBtn" style="width:100%">دخول</button>
-    <div class="login-err" id="loginErr"></div>
+    <button class="btn primary" id="loginBtn" style="width:100%">🔑 دخول</button>
+    <p id="loginError" style="margin-top:10px;font-size:13px;color:#dc2626"></p>
   </div>
 </div>
 
@@ -193,9 +170,9 @@ tr:hover td{background:#fdf2f8}
 <header>
   <h1>⚕ نظام إدارة عيادة النساء والتوليد</h1>
   <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <span id="curUserLbl" style="color:#fce7f3;font-size:13px"></span>
+    <span id="loggedInAs" style="font-size:12.5px;background:rgba(255,255,255,.18);padding:5px 12px;border-radius:20px"></span>
     <button class="status offline" id="connStatus">🟡 جاري الاتصال...</button>
-    <button class="btn sm gray" id="logoutBtn">🚪 خروج</button>
+    <button class="status" style="background:#7c2d12" id="logoutBtn">🚪 خروج</button>
   </span>
 </header>
 
@@ -225,8 +202,8 @@ tr:hover td{background:#fdf2f8}
       <div class="form-grid" id="regForm"></div>
       <div style="margin-top:10px;font-size:13px;color:#64748b" id="regPriceHint"></div>
       <div class="toolbar" style="margin-top:14px">
-        <button class="btn primary" id="regSaveBtn">💾 حفظ</button>
-        <button class="btn gray" id="regClearBtn">مسح</button>
+        <button class="btn primary" id="regSaveBtn">💾 حفظ </button>
+        <button class="btn gray" id="regClearBtn">مسح </button>
       </div>
     </div>
   </section>
@@ -351,16 +328,6 @@ tr:hover td{background:#fdf2f8}
           <div class="add-row"><input id="followupPrice" type="number" min="0"><button class="btn primary sm" id="saveFollowupPriceBtn">حفظ</button></div></div>
       </div>
     </div>
-    <div class="card">
-      <h2>👤 إدارة المستخدمين وكلمات المرور</h2>
-      <p style="font-size:12px;color:#94a3b8;margin-bottom:10px">تقدري تضيفي مستخدمين جدد، تغيّري كلمة السر، أو تحظري مستخدم من الدخول على النظام</p>
-      <div class="add-row">
-        <input id="newUserName" placeholder="اسم المستخدم">
-        <input id="newUserPass" placeholder="كلمة المرور" type="password">
-        <button class="btn primary sm" id="addUserBtn">➕ إضافة مستخدم</button>
-      </div>
-      <div id="usersMgmtList"></div>
-    </div>
     <div class="set-grid">
       <div class="set-card"><h3>🎯 أهداف الزيارة</h3>
         <div class="add-row"><input id="newPurpose" placeholder="مثال: كشف نسا"><button class="btn primary sm" id="addPurposeBtn">إضافة</button></div>
@@ -376,12 +343,21 @@ tr:hover td{background:#fdf2f8}
         <ul class="set-list" id="list-chronicOptions"></ul></div>
     </div>
     <div class="card">
-      <h2>🔗 الاتصال بـ Supabase</h2>
-      <div class="form-grid">
-        <div class="field"><label>Project URL</label><input id="cfgUrl"></div>
-        <div class="field"><label>anon public key</label><input id="cfgKey"></div>
+      <h2>🔒 إدارة المستخدمين</h2>
+      <p style="font-size:12.5px;color:#94a3b8;margin-bottom:10px">⚠️ ده حماية على مستوى البرنامج (بواب دخول) — مش نظام مصادقة كامل من Supabase. أي حد يقدر يوصل لكود الصفحة يقدر يوصل لقاعدة البيانات مباشرة. لو محتاج تأمين أقوى (Supabase Auth حقيقي) قولي وهظبطهولك.</p>
+      <div class="add-row">
+        <input id="newUserName" placeholder="اسم مستخدم جديد">
+        <input id="newUserPass" type="password" placeholder="كلمة المرور" style="max-width:160px">
+        <button class="btn primary sm" id="addUserBtn">➕ إضافة</button>
       </div>
-      <div class="toolbar" style="margin-top:10px"><button class="btn primary" id="saveCfgBtn">💾 حفظ وإعادة الاتصال</button></div>
+      <div id="usersMgmtList"></div>
+    </div>
+    <div class="card">
+      <h2>🖥 شاشة العرض (تلفزيون الاستقبال)</h2>
+      <p style="font-size:13px;color:#64748b;margin-bottom:10px">ارفعي فيديوهات هتشتغل لووب على شاشة التلفزيون في الاستقبال، وهتظهر تحتها اسم المريضة اللي عليها الدور لحظيًا.</p>
+      <label class="btn blue sm" style="cursor:pointer;display:inline-block">➕ رفع فيديو<input type="file" id="tvVideoInput" accept="video/*" multiple hidden></label>
+      <button class="btn gray sm" id="openTvBtn">🖥 فتح شاشة العرض</button>
+      <div id="tvVideosList" style="margin-top:12px"></div>
     </div>
     <div class="card">
       <h2>💾 النسخ الاحتياطي</h2>
@@ -490,18 +466,16 @@ tr:hover td{background:#fdf2f8}
 
 <script>
 // ============ الاتصال بـ Supabase ============
-const LS_URL='clinic-sb-url',LS_KEY='clinic-sb-key',LS_NAME='clinic-user-name',LS_CID='clinic-client-id',LS_SESSION='clinic-session';
-const DEFAULT_SB_URL='https://jtwmijlxicetnxwoafzb.supabase.co';
-const DEFAULT_SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0d21pamx4aWNldG54d29hZnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDQzMjMsImV4cCI6MjEwMjM4MDMyM30.coEUsEi9cZ7lSJapQ4r9lhg_bPuJjobYYeLjIyyqa7o';
-let sb=null,online=false,ch=null;
+const SUPABASE_URL='https://jtwmijlxicetnxwoafzb.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0d21pamx4aWNldG54d29hZnpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4MDQzMjMsImV4cCI6MjEwMjM4MDMyM30.coEUsEi9cZ7lSJapQ4r9lhg_bPuJjobYYeLjIyyqa7o';
+const LS_SESSION='clinic-session',LS_NAME='clinic-user-name',LS_CID='clinic-client-id';
+let sb=null,online=false,ch=null,currentUser=null;
 let myName=localStorage.getItem(LS_NAME)||'';
 let clientId=localStorage.getItem(LS_CID);
 if(!clientId){clientId=Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem(LS_CID,clientId);}
 
-let currentUser=null;
-
-let data={patients:[],visits:[],prescriptions:[],labResults:[],attachments:[],chat:[],users:[],
-  settings:{clinicName:'',examPrice:0,followupPrice:0,sources:[],visitPurposes:[],historyOptions:[],chronicOptions:[]}};
+let data={patients:[],visits:[],prescriptions:[],labResults:[],attachments:[],chat:[],staffUsers:[],
+  settings:{clinicName:'',examPrice:0,followupPrice:0,sources:[],visitPurposes:[],historyOptions:[],chronicOptions:[],tvVideos:[]}};
 
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -515,48 +489,82 @@ function fmtShortDate(ts){try{const d=new Date(ts||Date.now());return String(d.g
 function fmtTime(t){try{const[h,m]=t.split(':');const d=new Date();d.setHours(+h,+m);return d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});}catch(e){return t;}}
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600);}
 
-// ============ تشفير كلمات المرور (SHA-256) ============
-async function hashPass(username,pass){
-  const enc=new TextEncoder().encode('clinic-salt::'+username.trim().toLowerCase()+'::'+pass);
-  const buf=await crypto.subtle.digest('SHA-256',enc);
-  return[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
-// ============ إعداد أولي / اتصال Supabase ============
+// ============ إعداد أولي / اتصال Supabase + تسجيل الدخول ============
 function boot(){
-  const url=localStorage.getItem(LS_URL)||DEFAULT_SB_URL;
-  const key=localStorage.getItem(LS_KEY)||DEFAULT_SB_KEY;
-  $('setupScreen').style.display='none';
-  initSupabase(url,key);
+  $('loginScreen').style.display='none';$('appRoot').style.display='none';
+  initSupabase();
 }
-$('connRetryBtn').onclick=()=>location.reload();
-$('setupSaveBtn').onclick=()=>{
-  const url=$('setupUrl').value.trim(),key=$('setupKey').value.trim();
-  if(!url||!key){toast('⚠ اكتب الـ URL والمفتاح');return;}
-  localStorage.setItem(LS_URL,url);localStorage.setItem(LS_KEY,key);
-  boot();
-};
-async function initSupabase(url,key){
+async function initSupabase(){
   try{
-    if(!window.supabase||!window.supabase.createClient){
-      throw new Error('Supabase JS library not loaded. Check internet connection.');
-    }
-    sb=window.supabase.createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});
+    if(!window.supabase||!window.supabase.createClient){throw new Error('مكتبة Supabase JS متحملتش — تأكدي إنك متصلة بالإنترنت وإن الموقع مش عامل حظر لـ cdn.jsdelivr.net');}
+    sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
     setStatus('connecting');
     await loadAll();
     await ensureDefaultsRemote();
+    subscribeRealtime();
     online=true;setStatus('online');
-    $('connErrorScreen').style.display='none';
-    checkSession();
+    await checkSession();
   }catch(e){
-    console.error('Supabase init error:',e);
-    online=false;setStatus('error');
-    $('appRoot').style.display='none';$('loginScreen').style.display='none';$('setupScreen').style.display='none';
-    let msg='مش قادرين نتصل بقاعدة البيانات. الأسباب الشائعة:<br>1) لسه ما اتشغّلش ملف <b>add-users-table.sql</b> في Supabase SQL Editor.<br>2) مشكلة في الإنترنت أو في مشروع Supabase نفسه.';
-    if(e&&e.message)msg+='<br><br><span style="color:#dc2626;font-size:12px">تفاصيل الخطأ: '+esc(e.message)+'</span>';
-    $('connErrorMsg').innerHTML=msg;
-    $('connErrorScreen').style.display='block';
+    console.error(e);
+    online=false;
+    showGlobalError(e);
   }
+}
+function showGlobalError(e){
+  let msg='';
+  try{
+    msg=(e&&(e.message||e.error_description||e.msg))||(typeof e==='string'?e:JSON.stringify(e));
+  }catch(_){msg='خطأ غير معروف';}
+  if(!msg||msg==='{}')msg='تعذر الاتصال بالسيرفر (تأكدي من الإنترنت، ومن إنك شغّلتي ملف supabase-schema.sql بالكامل)';
+  $('globalErrorMsg').textContent=msg;
+  $('globalError').style.display='flex';
+}
+async function checkSession(){
+  let sess=null;
+  try{sess=JSON.parse(localStorage.getItem(LS_SESSION)||'null');}catch(e){}
+  if(sess&&sess.username){
+    const u=data.staffUsers.find(x=>x.username===sess.username);
+    if(u&&!u.blocked){showApp(u);return;}
+  }
+  localStorage.removeItem(LS_SESSION);
+  $('loginScreen').style.display='block';
+}
+let staticListenersBound=false;
+function showApp(u){
+  currentUser=u;
+  $('loginScreen').style.display='none';
+  $('appRoot').style.display='block';
+  $('loggedInAs').textContent='👤 '+u.username;
+  buildForm('regForm','reg');buildForm('pmForm','pm');resetForm('reg');
+  attachPatientAC($('reg_name'));
+  $('chatMyName').value=myName;
+  if(!staticListenersBound){attachAC($('rxDiag'),candDiag);staticListenersBound=true;}
+  fillFormSelects();renderAll();
+}
+async function sha256Hex(str){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
+  return[...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function randSalt(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
+async function doLogin(){
+  const username=$('loginUser').value.trim(),pass=$('loginPass').value;
+  $('loginError').textContent='';
+  if(!username||!pass){$('loginError').textContent='اكتبي اسم المستخدم وكلمة المرور';return;}
+  const u=data.staffUsers.find(x=>x.username===username);
+  if(!u){$('loginError').textContent='بيانات الدخول غلط';return;}
+  if(u.blocked){$('loginError').textContent='الحساب ده محظور — كلمي مسؤول النظام';return;}
+  const hash=await sha256Hex(u.salt+':'+pass);
+  if(hash!==u.passwordHash){$('loginError').textContent='بيانات الدخول غلط';return;}
+  localStorage.setItem(LS_SESSION,JSON.stringify({username:u.username,ts:Date.now()}));
+  showApp(u);
+  toast('✅ أهلاً بيكي، '+u.username);
+}
+function doLogout(){
+  localStorage.removeItem(LS_SESSION);
+  currentUser=null;
+  $('appRoot').style.display='none';
+  $('loginUser').value='';$('loginPass').value='';$('loginError').textContent='';
+  $('loginScreen').style.display='block';
 }
 function setStatus(state){
   const el=$('connStatus');
@@ -566,64 +574,8 @@ function setStatus(state){
 }
 $('connStatus').onclick=()=>showTab('settings',document.querySelector('.tab[data-tab="settings"]'));
 
-// ============ تسجيل الدخول ============
-async function checkSession(){
-  let sess=null;
-  try{sess=JSON.parse(localStorage.getItem(LS_SESSION)||'null');}catch(e){}
-  if(sess&&sess.id){
-    const u=data.users.find(x=>x.id===sess.id&&x.username===sess.username);
-    if(u&&!u.blocked){
-      currentUser=u;showApp();subscribeRealtime();return;
-    }
-  }
-  showLogin();
-}
-function showLogin(){
-  $('appRoot').style.display='none';$('setupScreen').style.display='none';
-  $('loginScreen').style.display='block';
-  $('loginErr').textContent='';
-  setTimeout(()=>$('loginUser').focus(),50);
-}
-async function doLogin(){
-  const u=$('loginUser').value.trim(),p=$('loginPass').value;
-  if(!u||!p){$('loginErr').textContent='⚠ اكتبي اسم المستخدم وكلمة المرور';return;}
-  $('loginErr').textContent='جاري التحقق...';
-  try{
-    const hp=await hashPass(u,p);
-    const user=data.users.find(x=>x.username.trim().toLowerCase()===u.trim().toLowerCase());
-    if(!user||user.passHash!==hp){$('loginErr').textContent='❌ اسم المستخدم أو كلمة المرور غلط';return;}
-    if(user.blocked){$('loginErr').textContent='🚫 المستخدم ده محظور من الدخول';return;}
-    currentUser=user;
-    localStorage.setItem(LS_SESSION,JSON.stringify({id:user.id,username:user.username}));
-    showApp();subscribeRealtime();
-  }catch(err){
-    $('loginErr').textContent='❌ خطأ: '+esc(err.message||'غير معروف');
-  }
-}
-function doLogout(){
-  localStorage.removeItem(LS_SESSION);
-  currentUser=null;
-  if(ch){try{sb.channel(ch).unsubscribe();}catch(e){}ch=null;}
-  $('loginUser').value='';$('loginPass').value='';
-  showLogin();
-}
-function showApp(){
-  $('loginScreen').style.display='none';$('setupScreen').style.display='none';
-  $('appRoot').style.display='block';
-  $('curUserLbl').textContent='👤 '+(currentUser?currentUser.username:'');
-  buildForm('regForm','reg');buildForm('pmForm','pm');resetForm('reg');
-  attachPatientAC($('reg_name'));
-  $('chatMyName').value=myName;
-  attachAC($('rxDiag'),candDiag);
-  fillFormSelects();renderAll();
-}
-$('loginBtn').onclick=doLogin;
-$('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-$('loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-$('logoutBtn').onclick=doLogout;
-
 async function loadAll(){
-  const tables=[['patients','patients'],['visits','visits'],['prescriptions','prescriptions'],['labResults','lab_results'],['attachments','attachments'],['chat','chat_messages'],['users','app_users']];
+  const tables=[['patients','patients'],['visits','visits'],['prescriptions','prescriptions'],['labResults','lab_results'],['attachments','attachments'],['chat','chat_messages'],['staffUsers','staff_users']];
   for(const[store,table] of tables){
     const{data:rows,error}=await sb.from(table).select('*');
     if(error)throw error;
@@ -643,124 +595,97 @@ async function ensureDefaultsRemote(){
     historyOptions:data.settings.historyOptions&&data.settings.historyOptions.length?data.settings.historyOptions:['Previous C-Section','Previous Normal Delivery','Miscarriage','Drug Allergy','Previous Surgery','Blood Transfusion','IUD Use','Irregular Periods'],
     chronicOptions:data.settings.chronicOptions&&data.settings.chronicOptions.length?data.settings.chronicOptions:['Diabetes','Hypertension','Thyroid Disorder','Anemia','Heart Disease','Asthma']
   };
+  if(!('tvVideos' in data.settings)||data.settings.tvVideos===null)defaults.tvVideos=[];
   const missing=Object.keys(defaults).filter(k=>data.settings[k]===undefined||data.settings[k]===null);
   for(const k of missing){data.settings[k]=defaults[k];await sb.from('settings').upsert({key:k,value:defaults[k]});}
-  if(!data.users.length){
-    const passHash=await hashPass('دمحمد','1');
-    const admin={id:uid(),username:'دمحمد',passHash,blocked:false,createdAt:Date.now()};
-    data.users.push(admin);
-    await sb.from('app_users').upsert(toRow('users',admin));
+  if(!data.staffUsers.length){
+    const salt=randSalt();
+    const passwordHash=await sha256Hex(salt+':1');
+    const admin={id:uid(),username:'دمحمدو',passwordHash,salt,blocked:false,createdAt:Date.now()};
+    data.staffUsers.push(admin);
+    await sb.from('staff_users').upsert(toRow('staffUsers',admin));
   }
 }
 
 // ============ تحويل الصفوف بين JS و Supabase ============
 function fromRow(store,r){
-  if(!r)return r;
   if(store==='patients')return{id:r.id,name:r.name,age:r.age,husbandName:r.husband_name,husbandJob:r.husband_job,phone:r.phone,
-    visitPurpose:r.visit_purpose,visitType:r.visit_type,source:r.source,date:r.date,time:r.time?String(r.time).slice(0,5):'',status:r.status,notes:r.notes,
-    history:r.history||{checked:[],notes:''},chronic:r.chronic||{checked:[],notes:''},createdAt:r.created_at};
-  if(store==='visits')return{id:r.id,patientId:r.patient_id,date:r.date,time:r.time?String(r.time).slice(0,5):'',visitPurpose:r.visit_purpose,visitType:r.visit_type,notes:r.notes,ts:r.ts};
+    visitPurpose:r.visit_purpose,visitType:r.visit_type,source:r.source,date:r.date,time:r.time?r.time.slice(0,5):'',status:r.status,notes:r.notes,
+    history:r.history||{checked:[],notes:''},chronic:r.chronic||{checked:[],notes:''},createdAt:r.created_at,calledAt:r.called_at};
+  if(store==='visits')return{id:r.id,patientId:r.patient_id,date:r.date,time:r.time?r.time.slice(0,5):'',visitPurpose:r.visit_purpose,visitType:r.visit_type,notes:r.notes,ts:r.ts};
   if(store==='prescriptions')return{id:r.id,patientId:r.patient_id,patientName:r.patient_name,patientAge:r.patient_age,diagnosis:r.diagnosis,meds:r.meds||[],date:r.date,ts:r.ts};
   if(store==='labResults')return{id:r.id,patientId:r.patient_id,testName:r.test_name,result:r.result,notes:r.notes,date:r.date,ts:r.ts};
   if(store==='attachments')return{id:r.id,patientId:r.patient_id,path:r.path,url:r.url,name:r.name,ts:r.ts};
   if(store==='chat')return{id:r.id,from:r.from_id,fromName:r.from_name,to:r.to_id,toName:r.to_name,text:r.text,ts:r.ts,type:'pm'};
-  if(store==='users')return{id:r.id,username:r.username,passHash:r.pass_hash,blocked:!!r.blocked,createdAt:r.created_at};
+  if(store==='staffUsers')return{id:r.id,username:r.username,passwordHash:r.password_hash,salt:r.salt,blocked:!!r.blocked,createdAt:r.created_at};
   return r;
 }
 function toRow(store,p){
-  if(!p)return p;
   if(store==='patients')return{id:p.id,name:p.name,age:p.age?+p.age:null,husband_name:p.husbandName||'',husband_job:p.husbandJob||'',phone:p.phone||'',
     visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',source:p.source||'',date:p.date||null,time:p.time||null,status:p.status||'في الانتظار',notes:p.notes||'',
-    history:p.history||{checked:[],notes:''},chronic:p.chronic||{checked:[],notes:''},created_at:p.createdAt||Date.now()};
+    history:p.history||{checked:[],notes:''},chronic:p.chronic||{checked:[],notes:''},created_at:p.createdAt||Date.now(),called_at:p.calledAt||null};
   if(store==='visits')return{id:p.id,patient_id:p.patientId,date:p.date||null,time:p.time||null,visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',notes:p.notes||'',ts:p.ts||Date.now()};
   if(store==='prescriptions')return{id:p.id,patient_id:p.patientId,patient_name:p.patientName,patient_age:p.patientAge?+p.patientAge:null,diagnosis:p.diagnosis||'',meds:p.meds||[],date:p.date||null,ts:p.ts||Date.now()};
   if(store==='labResults')return{id:p.id,patient_id:p.patientId,test_name:p.testName||'',result:p.result||'',notes:p.notes||'',date:p.date||null,ts:p.ts||Date.now()};
   if(store==='attachments')return{id:p.id,patient_id:p.patientId,path:p.path||'',url:p.url||'',name:p.name||'',ts:p.ts||Date.now()};
   if(store==='chat')return{id:p.id,from_id:p.from,from_name:p.fromName,to_id:p.to,to_name:p.toName,text:p.text,ts:p.ts||Date.now()};
-  if(store==='users')return{id:p.id,username:p.username,pass_hash:p.passHash,blocked:!!p.blocked,created_at:p.createdAt||Date.now()};
+  if(store==='staffUsers')return{id:p.id,username:p.username,password_hash:p.passwordHash,salt:p.salt,blocked:!!p.blocked,created_at:p.createdAt||Date.now()};
   return p;
 }
-const STORE_TABLE={patients:'patients',visits:'visits',prescriptions:'prescriptions',labResults:'lab_results',attachments:'attachments',chat:'chat_messages',users:'app_users'};
+const STORE_TABLE={patients:'patients',visits:'visits',prescriptions:'prescriptions',labResults:'lab_results',attachments:'attachments',chat:'chat_messages',staffUsers:'staff_users'};
 
 async function dbPut(store,record){
-  if(!record||!record.id)return;
   const arr=data[store];const i=arr.findIndex(r=>r.id===record.id);
   if(i>=0)arr[i]=record;else arr.push(record);
   renderAll();
-  try{
-    const{error}=await sb.from(STORE_TABLE[store]).upsert(toRow(store,record));
-    if(error){console.error('dbPut error:',error);toast('❌ فشل الحفظ أونلاين — تأكدي من الاتصال');}
-  }catch(e){console.error('dbPut exception:',e);toast('❌ فشل الحفظ: '+esc(e.message));}
+  const{error}=await sb.from(STORE_TABLE[store]).upsert(toRow(store,record));
+  if(error){console.error(error);toast('❌ فشل الحفظ أونلاين — تأكدي من الاتصال');}
 }
 async function dbDel(store,id){
-  if(!id)return;
   data[store]=data[store].filter(r=>r.id!==id);
   renderAll();
-  try{
-    const{error}=await sb.from(STORE_TABLE[store]).delete().eq('id',id);
-    if(error){console.error('dbDel error:',error);toast('❌ فشل الحذف أونلاين');}
-  }catch(e){console.error('dbDel exception:',e);toast('❌ فشل الحذف: '+esc(e.message));}
+  const{error}=await sb.from(STORE_TABLE[store]).delete().eq('id',id);
+  if(error){console.error(error);toast('❌ فشل الحذف أونلاين');}
 }
 async function saveSetting(key,value){
   data.settings[key]=value;
-  try{
-    const{error}=await sb.from('settings').upsert({key,value});
-    if(error){console.error('saveSetting error:',error);toast('❌ فشل حفظ الإعداد');}
-  }catch(e){console.error('saveSetting exception:',e);toast('❌ فشل حفظ الإعداد: '+esc(e.message));}
+  const{error}=await sb.from('settings').upsert({key,value});
+  if(error){console.error(error);toast('❌ فشل حفظ الإعداد');}
   renderAll();
 }
 
 function subscribeRealtime(){
-  if(ch)return;
-  try{
-    ch=sb.channel('clinic-db-changes');
-    [['patients','patients'],['visits','visits'],['prescriptions','prescriptions'],['lab_results','labResults'],['attachments','attachments'],['settings','settings'],['chat_messages','chat'],['app_users','users']]
-    .forEach(([table,store])=>{
-      ch.on('postgres_changes',{event:'*',schema:'public',table:table},payload=>{
-        if(!payload)return;
-        if(table==='settings'){
-          if(payload.eventType==='DELETE')return;
-          if(payload.new)data.settings[payload.new.key]=payload.new.value;
-          renderAll();return;
-        }
-        if(payload.eventType==='DELETE'){
-          if(payload.old&&payload.old.id){
-            data[store]=data[store].filter(r=>r.id!==payload.old.id);
-          }
-        }else if(payload.new){
-          const rec=fromRow(store,payload.new);
-          if(rec){
-            const arr=data[store];const i=arr.findIndex(r=>r.id===rec.id);
-            if(i>=0)arr[i]=rec;else arr.push(rec);
-            if(store==='chat'&&payload.eventType==='INSERT')receivePM(rec);
-          }
-        }
-        if(store==='users'&&currentUser){
-          const me=data.users.find(x=>x.id===currentUser.id);
-          if(!me||me.blocked){toast('🚫 تم حظرك من الدخول على النظام');doLogout();return;}
-          currentUser=me;
-        }
-        renderAll();
-      });
-    });
-    ch.on('presence',{event:'sync'},()=>{
-      try{
-        const st=ch.presenceState();
-        users=Object.values(st).flat().filter(u=>u.clientId!==clientId);
-        renderUsers();
-      }catch(e){console.error('presence sync error:',e);}
-    });
-    ch.subscribe(async status=>{
-      if(status==='SUBSCRIBED'){
-        online=true;setStatus('online');
-        try{await ch.track({clientId,name:myName||(currentUser?currentUser.username:'بدون اسم')});}catch(e){}
+  ch=sb.channel('clinic-db-changes');
+  [['patients','patients'],['visits','visits'],['prescriptions','prescriptions'],['lab_results','labResults'],['attachments','attachments'],['settings','settings'],['chat_messages','chat'],['staff_users','staffUsers']]
+  .forEach(([table,store])=>{
+    ch.on('postgres_changes',{event:'*',schema:'public',table},payload=>{
+      if(table==='settings'){
+        if(payload.eventType==='DELETE')return;
+        data.settings[payload.new.key]=payload.new.value;renderAll();return;
       }
-      else if(status==='CHANNEL_ERROR'||status==='CLOSED'||status==='TIMED_OUT'){online=false;setStatus('error');}
+      if(payload.eventType==='DELETE'){data[store]=data[store].filter(r=>r.id!==payload.old.id);}
+      else{
+        const rec=fromRow(store,payload.new);
+        const arr=data[store];const i=arr.findIndex(r=>r.id===rec.id);
+        if(i>=0)arr[i]=rec;else arr.push(rec);
+        if(store==='chat'&&payload.eventType==='INSERT')receivePM(rec);
+      }
+      if(store==='staffUsers'&&currentUser){
+        const me=data.staffUsers.find(x=>x.username===currentUser.username);
+        if(!me||me.blocked){toast('🚪 تم إنهاء صلاحية الدخول بتاعتك');doLogout();}
+      }
+      renderAll();
     });
-  }catch(e){
-    console.error('subscribeRealtime error:',e);
-    ch=null;
-  }
+  });
+  ch.on('presence',{event:'sync'},()=>{
+    const st=ch.presenceState();
+    users=Object.values(st).flat().filter(u=>u.clientId!==clientId);
+    renderUsers();
+  });
+  ch.subscribe(async status=>{
+    if(status==='SUBSCRIBED'){online=true;setStatus('online');await ch.track({clientId,name:myName||'بدون اسم'});}
+    else if(status==='CHANNEL_ERROR'||status==='CLOSED'||status==='TIMED_OUT'){online=false;setStatus('error');}
+  });
 }
 
 // ============ الفورمات ============
@@ -779,7 +704,7 @@ const FIELDS=[
 ];
 const selectRefs={reg:{},pm:{}};
 function buildForm(containerId,prefix){
-  const c=$(containerId);if(!c)return;c.innerHTML='';selectRefs[prefix]={};
+  const c=$(containerId);c.innerHTML='';selectRefs[prefix]={};
   FIELDS.forEach(f=>{
     const div=document.createElement('div');div.className='field';
     let inp;
@@ -794,17 +719,14 @@ function buildForm(containerId,prefix){
   });
 }
 function updateRegPriceHint(){
-  const t=$('reg_visitType');if(!t)return;
-  const val=t.value;
-  const price=val==='كشف'?num(data.settings.examPrice):(val==='إعادة'?num(data.settings.followupPrice):null);
+  const t=$('reg_visitType').value;
+  const price=t==='كشف'?num(data.settings.examPrice):(t==='إعادة'?num(data.settings.followupPrice):null);
   $('regPriceHint').textContent=price!==null?`💰 السعر المتوقع حسب الإعدادات: ${price} جنيه`:'';
 }
 function fillFormSelects(){
   for(const prefix of['reg','pm']){
-    if(!selectRefs[prefix])continue;
     for(const k in selectRefs[prefix]){
       const{el,spec}=selectRefs[prefix][k];
-      if(!el)continue;
       const cur=el.value;
       const opts=spec.optsKey?(data.settings[spec.optsKey]||[]):spec.opts;
       el.innerHTML=`<option value="">${spec.ph||'-- اختاري --'}</option>`+opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
@@ -812,12 +734,12 @@ function fillFormSelects(){
     }
   }
 }
-function getForm(prefix){const v={};FIELDS.forEach(f=>{const el=$(prefix+'_'+f.k);v[f.k]=el?el.value.trim():'';});return v;}
-function setForm(prefix,p){FIELDS.forEach(f=>{const el=$(prefix+'_'+f.k);if(el)el.value=p[f.k]??'';});if(prefix==='reg')updateRegPriceHint();}
+function getForm(prefix){const v={};FIELDS.forEach(f=>{v[f.k]=$(prefix+'_'+f.k).value.trim();});return v;}
+function setForm(prefix,p){FIELDS.forEach(f=>{$(prefix+'_'+f.k).value=p[f.k]??'';});if(prefix==='reg')updateRegPriceHint();}
 function resetForm(prefix,defaults){
   defaults=defaults||{};
   FIELDS.forEach(f=>{
-    const el=$(prefix+'_'+f.k);if(!el)return;
+    const el=$(prefix+'_'+f.k);
     el.value=defaults[f.k]!==undefined?defaults[f.k]:(f.k==='date'?todayStr():f.k==='time'?nowTime():'');
   });
   if(prefix==='reg')updateRegPriceHint();
@@ -826,7 +748,6 @@ function resetForm(prefix,defaults){
 // ============ اقتراح أسماء المريضات في الريسبشن ============
 let linkedPatientId=null,linkedName='';
 function attachPatientAC(input){
-  if(!input)return;
   input.addEventListener('input',()=>showPatientAC(input));
   input.addEventListener('focus',()=>{if(input.value.trim())showPatientAC(input);});
   input.addEventListener('blur',()=>setTimeout(hideAC,180));
@@ -909,7 +830,7 @@ function queueList(){
   });
 }
 function renderQueue(){
-  const list=queueList();const box=$('queueList');if(!box)return;
+  const list=queueList();const box=$('queueList');
   const t=todayStr();
   const waitingToday=data.patients.filter(p=>p.status==='في الانتظار'&&p.date===t).length;
   $('queueBadge').textContent=waitingToday||'';
@@ -936,7 +857,7 @@ function callNext(){
 }
 function callPatient(id){
   const p=data.patients.find(x=>x.id===id);if(!p)return;
-  dbPut('patients',{...p,status:'تم الاستدعاء'});
+  dbPut('patients',{...p,status:'تم الاستدعاء',calledAt:Date.now()});
   toast('📢 تم استدعاء: '+p.name);
 }
 function markDone(id){
@@ -950,8 +871,8 @@ function delPatient(id){
   dbDel('patients',id);
   toast('🗑 تم الحذف');
 }
+// ميزة ذكية: اقتراح موعد متابعة تالي لحالات الحمل
 function maybeSuggestNextVisit(p){
-  if(!p)return;
   if(p.visitPurpose==='متابعة حمل'||p.visitPurpose==='تأخر حمل'){
     const suggested=addDays(todayStr(),p.visitPurpose==='متابعة حمل'?14:21);
     toast('💡 اقتراح: احجزي موعد متابعة يوم '+suggested);
@@ -976,7 +897,7 @@ function renderAppointments(){
       return a>b?-1:1;
     });
   }
-  const box=$('apptList');if(!box)return;
+  const box=$('apptList');
   if(!dates.length){box.innerHTML='<div class="empty">مفيش حجوزات في الفترة دي 📭</div>';$('apptCount').textContent='';return;}
   $('apptCount').textContent=list.length+' حجز';
   box.innerHTML=dates.map(d=>{
@@ -1060,7 +981,7 @@ function renderPatients(){
   $('patType').innerHTML='<option value="">كل الأنواع</option>'+['كشف','إعادة'].map(x=>`<option ${x===curT?'selected':''}>${esc(x)}</option>`).join('');
   $('patScopeLbl').textContent=patDateVal?('مريضات يوم '+fmtDate(patDateVal)):(patShowAll?'كل المريضات':'مريضات اليوم');
   const list=filteredPatients();
-  const tb=$('patBody');if(!tb)return;
+  const tb=$('patBody');
   if(!list.length){tb.innerHTML='<tr><td colspan="8" class="empty">مفيش مريضات</td></tr>';return;}
   tb.innerHTML=list.map((p,i)=>`<tr>
     <td>${i+1}</td>
@@ -1111,7 +1032,6 @@ function quickBookFollowup(id,dateStr){
   openPatientModal(null,{name:p.name,age:p.age,phone:p.phone,husbandName:p.husbandName,husbandJob:p.husbandJob,visitPurpose:p.visitPurpose,visitType:'إعادة',source:p.source,date:dateStr,time:''});
 }
 function openWhatsapp(p){
-  if(!p||!p.phone)return;
   const clean=(p.phone||'').replace(/[^0-9]/g,'').replace(/^0/,'20');
   const msg=`تذكير من ${data.settings.clinicName||'العيادة'}: معادك يوم ${p.date?fmtDate(p.date):''} الساعة ${p.time?fmtTime(p.time):''}`;
   window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`,'_blank');
@@ -1125,7 +1045,7 @@ function refreshFileInfo(){
   $('pfInfo').innerHTML=`السن: <b>${esc(p.age||'؟')}</b> | هدف الزيارة: <b>${esc(p.visitPurpose||'؟')}</b> | نوع الزيارة: <b>${esc(p.visitType||'؟')}</b> | الزوج: <b>${esc(p.husbandName||'—')}${p.husbandJob?' ('+esc(p.husbandJob)+')':''}</b> | آخر زيارة: <b>${p.date?fmtDate(p.date):'—'}</b> | روشتات: <b>${rxCount}</b> | تحاليل: <b>${labCount}</b>`;
 }
 
-// ============ التاريخ المرضي والأمراض المزمنة ============
+// ============ التاريخ المرضي والأمراض المزمنة (مربعات صح) ============
 function renderHistoryChronic(){
   if(!filePatient)return;
   const p=filePatient;
@@ -1136,7 +1056,7 @@ function renderHistoryChronic(){
   $('pfChronicNotes').value=chr.notes||'';
 }
 function paintCheckGrid(containerId,options,checked){
-  const box=$(containerId);if(!box)return;
+  const box=$(containerId);
   box.innerHTML=options.map(opt=>{
     const on=checked.includes(opt);
     return `<label class="check-item ${on?'checked':''}"><input type="checkbox" value="${esc(opt)}" ${on?'checked':''} onchange="this.parentElement.classList.toggle('checked',this.checked)">${esc(opt)}</label>`;
@@ -1145,7 +1065,6 @@ function paintCheckGrid(containerId,options,checked){
 $('pfHistoryNew').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCheckOption('historyOptions','pfHistoryGrid',$('pfHistoryNew'));}});
 $('pfChronicNew').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCheckOption('chronicOptions','pfChronicGrid',$('pfChronicNew'));}});
 async function addCheckOption(settingKey,gridId,input){
-  if(!input)return;
   const v=input.value.trim();if(!v)return;
   const opts=data.settings[settingKey]||[];
   if(!opts.includes(v)){opts.push(v);await saveSetting(settingKey,opts);}
@@ -1164,73 +1083,64 @@ function savePfMed(){
   toast('✅ تم حفظ التاريخ المرضي');
 }
 
-// ============ نتائج التحاليل ============
-let editingLabId=null;
+// ============ نتائج التحاليل (كتابة) ============
 function renderLabRows(){
-  const el=$('labRows');if(!el)return;
-  el.innerHTML='';
-  editingLabId=null;
+  $('labRows').innerHTML='';
   addLabRow();
 }
-function addLabRow(l){
+function addLabRow(l,editingId){
   l=l||{testName:'',result:'',notes:''};
   const div=document.createElement('div');div.className='lab-row';
+  if(editingId)div.dataset.editingId=editingId;
   div.innerHTML=`<input class="lab-test" placeholder="e.g. CBC" value="${esc(l.testName)}">
     <input class="lab-result" placeholder="Result" value="${esc(l.result)}">
     <input class="lab-note" placeholder="Notes (optional)" value="${esc(l.notes)}">
     <input class="lab-date" type="date" value="${esc(l.date||todayStr())}">
-    <button class="btn primary sm" title="Save" style="padding:6px 0">💾</button>`;
+    <button class="btn ${editingId?'blue':'primary'} sm" title="${editingId?'Update':'Save'}" style="padding:6px 0">${editingId?'✔':'💾'}</button>`;
   div.querySelector('button').onclick=()=>saveLabRow(div);
   attachAC(div.querySelector('.lab-test'),candLabTests);
   $('labRows').appendChild(div);
 }
 function saveLabRow(div){
-  if(!filePatient){toast('⚠ No patient selected');return;}
   const testName=div.querySelector('.lab-test').value.trim();
   const result=div.querySelector('.lab-result').value.trim();
   const notes=div.querySelector('.lab-note').value.trim();
   const date=div.querySelector('.lab-date').value||todayStr();
   if(!testName||!result){toast('⚠ Enter test name and result');return;}
-  const rec={id:editingLabId||uid(),patientId:filePatient.id,testName,result,notes,date,ts:editingLabId?(data.labResults.find(x=>x.id===editingLabId)?.ts||Date.now()):Date.now()};
+  const editingId=div.dataset.editingId;
+  const rec={id:editingId||uid(),patientId:filePatient.id,testName,result,notes,date,ts:editingId?(data.labResults.find(x=>x.id===editingId)||{}).ts||Date.now():Date.now()};
   dbPut('labResults',rec);
-  toast(editingLabId?'💾 Lab result updated':'💾 Lab result saved');
-  editingLabId=null;
+  toast(editingId?'✔ Lab result updated':'💾 Lab result saved');
   div.remove();addLabRow();renderLabHistory();
 }
 function editLabRow(id){
   const l=(data.labResults||[]).find(x=>x.id===id);if(!l)return;
-  editingLabId=id;
   $('labRows').innerHTML='';
-  addLabRow(l);
-  toast('✏️ Editing lab result — update and save');
+  addLabRow(l,id);
+  toast('✏️ Edit the fields above then press ✔ to update');
 }
 function candLabTests(){const s=new Set();data.labResults.forEach(l=>{if(l.testName)s.add(l.testName);});return[...s];}
 function renderLabHistory(){
   if(!filePatient)return;
-  const box=$('labHistory');if(!box)return;
+  const box=$('labHistory');
   const list=(data.labResults||[]).filter(l=>l.patientId===filePatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0));
   if(!list.length){box.innerHTML='<div style="color:#94a3b8;font-size:13px">No lab results yet</div>';return;}
   box.innerHTML=`<table class="lab-table"><thead><tr><th>Date</th><th>Test</th><th>Result</th><th>Notes</th><th></th></tr></thead><tbody>`+
     list.map(l=>`<tr><td>${esc(l.date||'')}</td><td><b>${esc(l.testName)}</b></td><td>${esc(l.result)}</td><td>${esc(l.notes||'')}</td>
       <td style="white-space:nowrap"><button class="btn sm blue" onclick="editLabRow('${l.id}')">✏️</button> <button class="btn sm red" onclick="delLab('${l.id}')">🗑</button></td></tr>`).join('')+`</tbody></table>`;
 }
-function delLab(id){if(!confirm('Delete this lab result?'))return;if(editingLabId===id)editingLabId=null;dbDel('labResults',id);renderLabHistory();}
+function delLab(id){if(!confirm('Delete this lab result?'))return;dbDel('labResults',id);renderLabHistory();}
 
-// ============ الصور (أشعة) ============
+// ============ الصور (أشعة) عبر Supabase Storage ============
 function handleFiles(files){
-  if(!filePatient||!files||!files.length)return;
-  const currentPatientId=filePatient.id;
+  if(!filePatient)return;
   [...files].forEach(f=>{
     if(!f.type.startsWith('image/')){toast('⚠ صور فقط');return;}
     const reader=new FileReader();
-    reader.onload=()=>{
-      if(!reader.result){toast('⚠ فشل قراءة الصورة');return;}
-      resizeImageToBlob(reader.result,1000,0.72,blob=>{
-        if(!blob){toast('⚠ فشل تجهيز الصورة');return;}
-        uploadAttachment(currentPatientId,blob,f.name);
-      });
-    };
-    reader.onerror=()=>toast('⚠ خطأ في قراءة الملف');
+    reader.onload=()=>resizeImageToBlob(reader.result,1000,0.72,blob=>{
+      if(!blob){toast('⚠ فشل تجهيز الصورة');return;}
+      uploadAttachment(filePatient.id,blob,f.name);
+    });
     reader.readAsDataURL(f);
   });
 }
@@ -1243,25 +1153,23 @@ function resizeImageToBlob(src,maxW,q,cb){
     c.getContext('2d').drawImage(img,0,0,w,h);
     c.toBlob(blob=>cb(blob),'image/jpeg',q);
   };
-  img.onerror=()=>{toast('⚠ الصورة مش صالحة');cb(null);};
+  img.onerror=()=>toast('⚠ الصورة مش صالحة');
   img.src=src;
 }
 async function uploadAttachment(patientId,blob,originalName){
-  if(!patientId||!blob||!sb)return;
   try{
     const path=`${patientId}/${uid()}.jpg`;
-    const{error}=await sb.storage.from('attachments').upload(path,blob,{contentType:'image/jpeg',upsert:false});
-    if(error){console.error('upload error:',error);toast('❌ فشل رفع الصورة: '+esc(error.message));return;}
+    const{error}=await sb.storage.from('attachments').upload(path,blob,{contentType:'image/jpeg'});
+    if(error){toast('❌ فشل رفع الصورة');return;}
     const{data:urlData}=sb.storage.from('attachments').getPublicUrl(path);
-    if(!urlData||!urlData.publicUrl){toast('❌ فشل الحصول على رابط الصورة');return;}
     const rec={id:uid(),patientId,path,url:urlData.publicUrl,name:(originalName||'صورة').slice(0,80),ts:Date.now()};
     dbPut('attachments',rec);
     toast('📷 تم إضافة الصورة لملف المريضة');
-  }catch(e){console.error('upload exception:',e);toast('❌ خطأ في رفع الصورة: '+esc(e.message));}
+  }catch(e){toast('❌ خطأ في رفع الصورة');}
 }
 function renderPfAttachments(){
   if(!filePatient)return;
-  const box=$('pfAttachments');if(!box)return;
+  const box=$('pfAttachments');
   const list=(data.attachments||[]).filter(a=>a.patientId===filePatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0));
   box.innerHTML=list.length?list.map(a=>`
     <div class="att-item">
@@ -1279,14 +1187,12 @@ function viewImg(id){
 async function delAtt(id){
   if(!confirm('تحذفي الصورة دي؟'))return;
   const a=data.attachments.find(x=>x.id===id);
-  if(a&&a.path&&sb){
-    try{await sb.storage.from('attachments').remove([a.path]);}catch(e){console.error('storage remove error:',e);}
-  }
+  if(a&&a.path)await sb.storage.from('attachments').remove([a.path]);
   dbDel('attachments',id);
 }
 function renderPfPrescriptions(){
   if(!filePatient)return;
-  const box=$('pfPrescriptions');if(!box)return;
+  const box=$('pfPrescriptions');
   const list=data.prescriptions.filter(r=>r.patientId===filePatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0));
   box.innerHTML=list.length?list.map(r=>`
     <div class="rx-hist-item">
@@ -1369,7 +1275,7 @@ function renderStatsPage(){
     if(o.visitType==='كشف')byDay[o.date].exam++;else if(o.visitType==='إعادة')byDay[o.date].followup++;
     byDay[o.date].rev+=priceFor(o.visitType);
   });
-  const days=Object.keys(byDay).sort((a,b)=>b.localeCompare(a));
+  const days=Object.keys(byDay).sort((a,b)=>b<a?-1:1);
   $('statsDayBody').innerHTML=days.length?days.map(d=>`<tr>
       <td>${esc(fmtDate(d))}${d===t?' <span class="chip call">اليوم</span>':''}</td>
       <td>${byDay[d].count}</td><td>${byDay[d].exam}</td><td>${byDay[d].followup}</td><td>${byDay[d].rev}</td>
@@ -1389,13 +1295,7 @@ function renderStatsPage(){
     if(visitCountByPatient[p.id]>1)buckets[b].returning++;
   });
   const order=['0-10','11-20','21-30','31-40','41-50','51-60','61-70','71+','غير محدد'];
-  const bkeys=Object.keys(buckets).sort((a,b)=>{
-    const ai=order.indexOf(a),bi=order.indexOf(b);
-    if(ai===-1&&bi===-1)return 0;
-    if(ai===-1)return 1;
-    if(bi===-1)return -1;
-    return ai-bi;
-  });
+  const bkeys=Object.keys(buckets).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
   let best=null,worst=null;
   bkeys.forEach(k=>{
     if(!buckets[k].total)return;
@@ -1416,7 +1316,7 @@ function renderStatsPage(){
 // ============ الشات الخاص ============
 let users=[],activePeer=null,unread={};
 function renderUsers(){
-  const box=$('usersList');if(!box)return;
+  const box=$('usersList');
   if(!online){box.innerHTML='<li class="empty" style="padding:12px">الشات متاح لما تكوني متصلة بـ Supabase</li>';renderChatBadge();return;}
   if(!users.length){box.innerHTML='<li class="empty" style="padding:12px">مفيش حد تاني متصل دلوقتي</li>';renderChatBadge();return;}
   box.innerHTML=users.map(u=>`
@@ -1433,14 +1333,14 @@ function renderChatBadge(){
 function openConvo(cid){
   const u=users.find(x=>x.clientId===cid);if(!u)return;
   activePeer=u;unread[cid]=0;
-  $('convoHead').innerHTML=`<span>💬 المحادثة مع: ${esc(u.name)}</span><button class="btn sm red" onclick="clearConvo()">🗑 مسح المحادثة</button>`;
+  $('convoHead').textContent='💬 المحادثة مع: '+u.name;
   renderMsgs();renderUsers();$('msgInput').focus();
 }
 function pairMsgs(cid){
   return data.chat.filter(m=>(m.from===clientId&&m.to===cid)||(m.from===cid&&m.to===clientId)).sort((a,b)=>(a.ts||0)-(b.ts||0));
 }
 function renderMsgs(){
-  const box=$('msgs');if(!box)return;
+  const box=$('msgs');
   if(!activePeer){box.innerHTML='<div class="empty">اختاري حد من المتصلين عشان تبدأوا محادثة خاصة 👈</div>';return;}
   const list=pairMsgs(activePeer.clientId);
   box.innerHTML=list.map(msgHTML).join('')||'<div class="empty">ابدأي المحادثة برسالة 👋</div>';
@@ -1448,23 +1348,10 @@ function renderMsgs(){
 }
 function msgHTML(m){
   const mine=m.from===clientId;
-  return `<div class="msg ${mine?'me':'them'}">${mine?`<button class="mdel" title="حذف" onclick="delMsg('${m.id}')">✖</button>`:''}${esc(m.text)}<span class="mt">${esc(mine?'أنا':(m.fromName||''))} • ${new Date(m.ts||Date.now()).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span></div>`;
-}
-function delMsg(id){
-  dbDel('chat',id);
-  renderMsgs();
-}
-function clearConvo(){
-  if(!activePeer)return;
-  if(!confirm('هتمسحي كل المحادثة دي؟ الإجراء ده مش هيتراجع'))return;
-  const list=pairMsgs(activePeer.clientId);
-  list.forEach(m=>dbDel('chat',m.id));
-  toast('🗑 تم مسح المحادثة');
-  renderMsgs();
+  return `<div class="msg ${mine?'me':'them'}">${esc(m.text)}<span class="mt">${esc(mine?'أنا':(m.fromName||''))} • ${new Date(m.ts||Date.now()).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</span></div>`;
 }
 function sendMsg(){
-  const inp=$('msgInput');if(!inp)return;
-  const text=inp.value.trim();
+  const inp=$('msgInput');const text=inp.value.trim();
   if(!text)return;
   if(!activePeer){toast('اختاري حد الأول من القائمة');return;}
   const m={id:uid(),from:clientId,fromName:myName||'بدون اسم',to:activePeer.clientId,toName:activePeer.name,text,ts:Date.now()};
@@ -1472,7 +1359,6 @@ function sendMsg(){
   inp.value='';renderMsgs();
 }
 function receivePM(m){
-  if(!m)return;
   if(m.from===clientId||m.to===clientId){
     if(activePeer&&activePeer.clientId===m.from){renderMsgs();}
     else if(m.to===clientId){unread[m.from]=(unread[m.from]||0)+1;beep();}
@@ -1483,7 +1369,7 @@ function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(
 function saveMyName(){
   myName=$('chatMyName').value.trim();
   localStorage.setItem(LS_NAME,myName);
-  if(online&&ch){try{ch.track({clientId,name:myName||'بدون اسم'});}catch(e){}}
+  if(online&&ch)ch.track({clientId,name:myName||'بدون اسم'});
   toast('✅ تم حفظ الاسم');
 }
 
@@ -1492,63 +1378,99 @@ function renderSettings(){
   $('clinicName').value=data.settings.clinicName||'';
   $('examPrice').value=data.settings.examPrice||0;
   $('followupPrice').value=data.settings.followupPrice||0;
-  $('cfgUrl').value=localStorage.getItem(LS_URL)||'';
-  $('cfgKey').value=localStorage.getItem(LS_KEY)||'';
   ['visitPurposes','sources','historyOptions','chronicOptions'].forEach(k=>{
-    const el=$('list-'+k);if(!el)return;
-    el.innerHTML=(data.settings[k]||[]).map((v,i)=>`<li>${esc(v)}<button onclick="delSetting('${k}',${i})">✖</button></li>`).join('')||'<li style="color:#94a3b8">فاضي</li>';
+    $('list-'+k).innerHTML=(data.settings[k]||[]).map((v,i)=>`<li>${esc(v)}<button onclick="delSetting('${k}',${i})">✖</button></li>`).join('')||'<li style="color:#94a3b8">فاضي</li>';
   });
   renderUsersMgmt();
+  renderTvVideosList();
   fillFormSelects();
 }
 function renderUsersMgmt(){
   const box=$('usersMgmtList');if(!box)return;
-  const list=[...(data.users||[])].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-  if(!list.length){box.innerHTML='<div class="empty">مفيش مستخدمين لسه</div>';return;}
-  box.innerHTML=list.map(u=>`
-    <div class="userrow">
-      <b>${esc(u.username)}</b>
-      <span class="chip ${u.blocked?'blocked':'active2'}">${u.blocked?'محظور 🚫':'نشط ✅'}</span>
-      ${currentUser&&currentUser.id===u.id?'<span style="font-size:11px;color:#94a3b8">(أنتِ دلوقتي)</span>':''}
-      <button class="btn sm gray" onclick="changeUserPass('${u.id}')">🔑 تغيير كلمة السر</button>
-      <button class="btn sm ${u.blocked?'blue':'gray'}" onclick="toggleBlockUser('${u.id}')">${u.blocked?'✅ إلغاء الحظر':'🚫 حظر'}</button>
-      ${(data.users.length>1)?`<button class="btn sm red" onclick="deleteUser('${u.id}')">🗑 حذف</button>`:''}
+  if(!data.staffUsers.length){box.innerHTML='<div class="empty">مفيش مستخدمين</div>';return;}
+  box.innerHTML=data.staffUsers.map(u=>`
+    <div class="rx-hist-item">
+      <span>${u.blocked?'🚫':'🟢'} <b>${esc(u.username)}</b>${currentUser&&currentUser.username===u.username?' <span style="color:#94a3b8;font-size:11px">(أنتي)</span>':''}</span>
+      <span>
+        <button class="btn sm gray" onclick="changeUserPassword('${u.id}')">🔑 كلمة مرور</button>
+        <button class="btn sm ${u.blocked?'blue':'gray'}" onclick="toggleBlockUser('${u.id}')">${u.blocked?'✅ إلغاء الحظر':'🚫 حظر'}</button>
+        <button class="btn sm red" onclick="deleteUser('${u.id}')">🗑</button>
+      </span>
     </div>`).join('');
 }
-async function addUserMgmt(){
-  const name=$('newUserName').value.trim(),pass=$('newUserPass').value;
-  if(!name||!pass){toast('⚠ اكتبي اسم المستخدم وكلمة المرور');return;}
-  if(data.users.some(u=>u.username.trim().toLowerCase()===name.toLowerCase())){toast('⚠ اسم المستخدم ده موجود بالفعل');return;}
-  const passHash=await hashPass(name,pass);
-  const u={id:uid(),username:name,passHash,blocked:false,createdAt:Date.now()};
-  await dbPut('users',u);
+async function addStaffUser(){
+  const username=$('newUserName').value.trim(),pass=$('newUserPass').value;
+  if(!username||!pass){toast('⚠ اكتبي اسم المستخدم وكلمة المرور');return;}
+  if(data.staffUsers.some(u=>u.username===username)){toast('⚠ اسم المستخدم ده موجود قبل كده');return;}
+  const salt=randSalt();
+  const passwordHash=await sha256Hex(salt+':'+pass);
+  const u={id:uid(),username,passwordHash,salt,blocked:false,createdAt:Date.now()};
+  await dbPut('staffUsers',u);
   $('newUserName').value='';$('newUserPass').value='';
   toast('✅ تم إضافة المستخدم');
 }
-async function changeUserPass(id){
-  const u=data.users.find(x=>x.id===id);if(!u)return;
-  const np=prompt('كلمة المرور الجديدة لـ "'+u.username+'":');
-  if(!np)return;
-  const passHash=await hashPass(u.username,np);
-  await dbPut('users',{...u,passHash});
-  toast('✅ تم تغيير كلمة المرور');
-}
 async function toggleBlockUser(id){
-  const u=data.users.find(x=>x.id===id);if(!u)return;
-  if(currentUser&&currentUser.id===id&&!u.blocked){toast('⚠ متقدريش تحظري نفسك');return;}
-  await dbPut('users',{...u,blocked:!u.blocked});
-  toast(u.blocked?'✅ تم إلغاء الحظر':'🚫 تم الحظر');
+  const u=data.staffUsers.find(x=>x.id===id);if(!u)return;
+  if(currentUser&&currentUser.username===u.username){toast('⚠ متقدريش تحظري نفسك');return;}
+  await dbPut('staffUsers',{...u,blocked:!u.blocked});
+  toast(u.blocked?'✅ تم إلغاء الحظر':'🚫 تم حظر المستخدم');
 }
 async function deleteUser(id){
-  if(currentUser&&currentUser.id===id){toast('⚠ متقدريش تحذفي حسابك وانتِ داخلة بيه');return;}
-  const u=data.users.find(x=>x.id===id);if(!u)return;
+  const u=data.staffUsers.find(x=>x.id===id);if(!u)return;
+  if(currentUser&&currentUser.username===u.username){toast('⚠ متقدريش تحذفي نفسك');return;}
   if(!confirm('تحذفي المستخدم "'+u.username+'"؟'))return;
-  await dbDel('users',id);
+  await dbDel('staffUsers',id);
   toast('🗑 تم حذف المستخدم');
 }
+async function changeUserPassword(id){
+  const u=data.staffUsers.find(x=>x.id===id);if(!u)return;
+  const pass=prompt('كلمة المرور الجديدة لـ '+u.username+':');
+  if(!pass)return;
+  const salt=randSalt();
+  const passwordHash=await sha256Hex(salt+':'+pass);
+  await dbPut('staffUsers',{...u,passwordHash,salt});
+  toast('✅ تم تغيير كلمة المرور');
+}
+
+// ============ فيديوهات شاشة العرض (تلفزيون الاستقبال) ============
+function handleTvVideoFiles(files){
+  [...files].forEach(f=>{
+    if(!f.type.startsWith('video/')){toast('⚠ ملفات فيديو فقط');return;}
+    uploadTvVideo(f);
+  });
+}
+async function uploadTvVideo(file){
+  try{
+    toast('⏳ جاري رفع الفيديو...');
+    const path=`${uid()}-${file.name.replace(/[^a-zA-Z0-9.]/g,'_')}`;
+    const{error}=await sb.storage.from('tv-videos').upload(path,file,{contentType:file.type});
+    if(error){toast('❌ فشل رفع الفيديو');console.error(error);return;}
+    const{data:urlData}=sb.storage.from('tv-videos').getPublicUrl(path);
+    const list=[...(data.settings.tvVideos||[]),{id:uid(),path,url:urlData.publicUrl,name:file.name,ts:Date.now()}];
+    await saveSetting('tvVideos',list);
+    toast('✅ تم رفع الفيديو لشاشة العرض');
+  }catch(e){console.error(e);toast('❌ خطأ في رفع الفيديو');}
+}
+function renderTvVideosList(){
+  const box=$('tvVideosList');if(!box)return;
+  const list=data.settings.tvVideos||[];
+  if(!list.length){box.innerHTML='<div class="empty">مفيش فيديوهات مرفوعة لسه</div>';return;}
+  box.innerHTML=list.map(v=>`
+    <div class="rx-hist-item">
+      <span>🎬 ${esc(v.name)}</span>
+      <span><button class="btn sm red" onclick="delTvVideo('${v.id}')">🗑</button></span>
+    </div>`).join('');
+}
+async function delTvVideo(id){
+  const v=(data.settings.tvVideos||[]).find(x=>x.id===id);if(!v)return;
+  if(!confirm('تحذفي الفيديو "'+v.name+'"؟'))return;
+  if(v.path)await sb.storage.from('tv-videos').remove([v.path]);
+  const list=(data.settings.tvVideos||[]).filter(x=>x.id!==id);
+  await saveSetting('tvVideos',list);
+  toast('🗑 تم حذف الفيديو');
+}
 async function addSetting(k,inputId){
-  const inp=$(inputId);if(!inp)return;
-  const v=inp.value.trim();if(!v)return;
+  const inp=$(inputId);const v=inp.value.trim();if(!v)return;
   const arr=data.settings[k]||[];
   if(arr.includes(v)){toast('موجود قبل كده');return;}
   arr.push(v);
@@ -1607,7 +1529,6 @@ function collectRx(){
   return{diagnosis:$('rxDiag').value.trim(),meds};
 }
 function saveRx(andPrint){
-  if(!rxPatient){toast('⚠ No patient selected');return;}
   const{diagnosis,meds}=collectRx();
   if(!diagnosis&&!meds.length){toast('⚠ Enter a diagnosis or at least one medication');return;}
   const rx={id:uid(),patientId:rxPatient.id,patientName:rxPatient.name,patientAge:rxPatient.age,diagnosis,meds,ts:Date.now(),date:todayStr()};
@@ -1617,7 +1538,7 @@ function saveRx(andPrint){
   if(andPrint)printRx(rx);
 }
 function renderRxHistory(){
-  const box=$('rxHistory');if(!box)return;
+  const box=$('rxHistory');
   if(!rxPatient){box.innerHTML='';return;}
   const list=data.prescriptions.filter(r=>r.patientId===rxPatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0));
   box.innerHTML=list.length?`<div class="rx-hist"><b style="font-size:13px">📜 Previous prescriptions:</b>`+list.map(r=>`
@@ -1631,7 +1552,6 @@ function renderRxHistory(){
     </div>`).join('')+`</div>`:'';
 }
 function loadRx(id){
-  if(!rxPatient){toast('⚠ No patient selected');return;}
   const r=data.prescriptions.find(x=>x.id===id);if(!r)return;
   $('rxDiag').value=r.diagnosis||'';
   $('rxRows').innerHTML='';
@@ -1646,13 +1566,12 @@ function delRx(id){
 }
 function printRxById(id){const r=data.prescriptions.find(x=>x.id===id);if(r)printRx(r);}
 function printRx(rx){
-  if(!rx)return;
   const clinic=data.settings.clinicName||'Clinic';
   $('printArea').innerHTML=`<div class="paper">
     <div class="ph"><h1>${esc(clinic)}</h1></div>
     <div class="pmeta"><span>Name: <b>${esc(rx.patientName)}</b></span><span>Date: ${fmtDate(rx.date||todayStr())}</span></div>
     ${rx.diagnosis?`<div class="diag">Diagnosis: <b>${esc(rx.diagnosis)}</b></div>`:''}
-    <ol>${(rx.meds||[]).map(m=>`<li><b>${esc(m.name)}</b>${m.dose?` — ${esc(m.dose)}`:''}${m.note?` <i>(${esc(m.note)})</i>`:''}</li>`).join('')}</ol>
+    <ol>${rx.meds.map(m=>`<li><b>${esc(m.name)}</b>${m.dose?` — ${esc(m.dose)}`:''}${m.note?` <i>(${esc(m.note)})</i>`:''}</li>`).join('')}</ol>
     <div class="sign" style="justify-content:center;text-align:center"><span>Wishing you a speedy recovery 🌿</span></div>
   </div>`;
   setTimeout(()=>window.print(),100);
@@ -1661,7 +1580,6 @@ function printRx(rx){
 // ============ الاقتراحات التلقائية (أوتوكومبليت) ============
 let acItems=[],acSel=-1,acTarget=null;
 function attachAC(input,getter){
-  if(!input||typeof getter!=='function')return;
   input.addEventListener('input',()=>showAC(input,getter));
   input.addEventListener('focus',()=>{if(input.value.trim())showAC(input,getter);});
   input.addEventListener('blur',()=>setTimeout(hideAC,150));
@@ -1677,12 +1595,10 @@ function attachAC(input,getter){
 function showAC(input,getter){
   const q=input.value.trim().toLowerCase();
   if(!q){hideAC();return;}
-  let items=[];
-  try{items=getter();}catch(e){items=[];}
-  acItems=(items||[]).filter(x=>String(x).toLowerCase().includes(q))
+  acItems=getter().filter(x=>x.toLowerCase().includes(q))
     .sort((a,b)=>{
-      const ai=String(a).toLowerCase().indexOf(q),bi=String(b).toLowerCase().indexOf(q);
-      return(ai-bi)||(String(a).length-String(b).length);
+      const ai=a.toLowerCase().indexOf(q),bi=b.toLowerCase().indexOf(q);
+      return(ai-bi)||(a.length-b.length);
     }).slice(0,10);
   if(!acItems.length){hideAC();return;}
   acTarget=input;acSel=0;
@@ -1694,7 +1610,7 @@ function showAC(input,getter){
   positionAC(input);
 }
 function positionAC(input){
-  const box=$('acBox');if(!box||!input)return;
+  const box=$('acBox');
   const r=input.getBoundingClientRect();
   box.style.display='block';
   box.style.top=(r.bottom+3)+'px';
@@ -1704,33 +1620,28 @@ function positionAC(input){
   box.style.minWidth=w+'px';box.style.maxWidth=Math.max(w,360)+'px';
 }
 function paintAC(){
-  const box=$('acBox');if(!box)return;
-  box.querySelectorAll('.ac-item').forEach((el,i)=>el.classList.toggle('sel',i===acSel));
+  $('acBox').querySelectorAll('.ac-item').forEach((el,i)=>el.classList.toggle('sel',i===acSel));
 }
 function pickAC(v){if(acTarget){acTarget.value=v;acTarget.focus();}hideAC();}
 function hideAC(){$('acBox').style.display='none';acItems=[];acSel=-1;}
 
 // ============ عام ============
-function openModal(id){const el=$(id);if(el)el.classList.add('open');}
-function closeModal(id){const el=$(id);if(el)el.classList.remove('open');}
+function openModal(id){$(id).classList.add('open');}
+function closeModal(id){$(id).classList.remove('open');}
 function showTab(name,btn){
   document.querySelectorAll('main > section').forEach(s=>s.hidden=true);
-  const sec=$('tab-'+name);if(sec)sec.hidden=false;
+  $('tab-'+name).hidden=false;
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  if(btn)btn.classList.add('active');
+  btn.classList.add('active');
   if(name==='chat'){renderUsers();renderMsgs();}
   if(name==='stats'){renderStatsPage();}
-  if(name==='patients'){renderPatients();}
-  if(name==='queue'){renderQueue();}
-  if(name==='appointments'){renderAppointments();}
 }
 function renderAll(){
-  if(!currentUser)return;
   if(!$('appRoot')||$('appRoot').style.display==='none')return;
   renderStats();renderQueue();renderAppointments();renderPatients();renderSettings();renderUsers();renderChatBadge();
   if($('fileModal').classList.contains('open')&&filePatient){
     const fresh=data.patients.find(x=>x.id===filePatient.id);
-    if(fresh){filePatient=fresh;refreshFileInfo();renderPfAttachments();renderPfPrescriptions();renderLabRows();renderLabHistory();}
+    if(fresh){filePatient=fresh;refreshFileInfo();renderPfAttachments();renderPfPrescriptions();renderLabHistory();}
   }
   if($('rxModal').classList.contains('open'))renderRxHistory();
   if(!$('tab-stats').hidden)renderStatsPage();
@@ -1778,19 +1689,19 @@ window.addEventListener('load',()=>{
   $('addSourceBtn').onclick=()=>addSetting('sources','newSource');
   $('addHistOptBtn').onclick=()=>addSetting('historyOptions','newHistOpt');
   $('addChronicOptBtn').onclick=()=>addSetting('chronicOptions','newChronicOpt');
-  $('addUserBtn').onclick=addUserMgmt;
-  $('newUserPass').addEventListener('keydown',e=>{if(e.key==='Enter')addUserMgmt();});
   [['newPurpose','visitPurposes'],['newSource','sources'],['newHistOpt','historyOptions'],['newChronicOpt','chronicOptions']].forEach(([id,k])=>{
-    const el=$(id);if(el)el.addEventListener('keydown',e=>{if(e.key==='Enter')addSetting(k,id);});
+    $(id).addEventListener('keydown',e=>{if(e.key==='Enter')addSetting(k,id);});
   });
-  $('saveCfgBtn').onclick=()=>{
-    const url=$('cfgUrl').value.trim(),key=$('cfgKey').value.trim();
-    if(!url||!key){toast('⚠ اكتبي الـ URL والمفتاح');return;}
-    localStorage.setItem(LS_URL,url);localStorage.setItem(LS_KEY,key);
-    toast('🔄 جاري إعادة الاتصال...');
-    setTimeout(()=>location.reload(),800);
-  };
+  $('addUserBtn').onclick=addStaffUser;
+  $('newUserPass').addEventListener('keydown',e=>{if(e.key==='Enter')addStaffUser();});
+  $('tvVideoInput').onchange=e=>{handleTvVideoFiles(e.target.files);e.target.value='';};
+  $('openTvBtn').onclick=()=>window.open('display.html','_blank');
   $('exportBackupBtn').onclick=exportBackup;
+
+  $('loginBtn').onclick=doLogin;
+  $('loginPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  $('loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')$('loginPass').focus();});
+  $('logoutBtn').onclick=doLogout;
 
   $('pmSaveBtn').onclick=savePatientModal;
   $('rxAddRowBtn').onclick=()=>addRxRow();
