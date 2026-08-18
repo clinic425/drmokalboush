@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>⚕ نظام إدارة العيادة </title>
+<title>⚕ نظام إدارة عيادة النساء والتوليد</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -344,7 +344,7 @@ tr:hover td{background:#fdf2f8}
     </div>
     <div class="card">
       <h2>🔒 إدارة المستخدمين</h2>
-      <p style="font-size:12.5px;color:#94a3b8;margin-bottom:10px">⚠️ ده حماية على مستوى البرنامج (بواب دخول) — مش نظام مصادقة كامل من Supabase. أي حد يقدر يوصل لكود الصفحة يقدر يوصل لقاعدة البيانات مباشرة. لو محتاج تأمين أقوى (Supabase Auth حقيقي) قولي وهظبطهولك.</p>
+      <p style="font-size:12.5px;color:#94a3b8;margin-bottom:10px"> </p>
       <div class="add-row">
         <input id="newUserName" placeholder="اسم مستخدم جديد">
         <input id="newUserPass" type="password" placeholder="كلمة المرور" style="max-width:160px">
@@ -364,7 +364,7 @@ tr:hover td{background:#fdf2f8}
       <div class="toolbar">
         <button class="btn blue" id="exportBackupBtn">📤 تصدير نسخة احتياطية (JSON)</button>
       </div>
-      <p style="font-size:13px;color:#64748b">✅ البيانات كلها متزامنة مباشرة أونلاين عبر Supabase وبتظهر لحظيًا على كل الأجهزة المتصلة — النسخة الاحتياطية دي للأمان فقط.</p>
+      <p style="font-size:13px;color:#64748b"> </p>
     </div>
   </section>
 </main>
@@ -381,7 +381,7 @@ tr:hover td{background:#fdf2f8}
   </div>
 </div>
 
-<!-- نافذة الروشتة (إنجليزي) -->
+<!-- نافذة الروشتة  -->
 <div class="modal" id="rxModal">
   <div class="modal-box" dir="ltr" lang="en">
     <div class="modal-head"><h3>💊 Prescription — <span id="rxPatientName"></span></h3><button class="x" data-close="rxModal">✖</button></div>
@@ -557,7 +557,7 @@ async function doLogin(){
   if(hash!==u.passwordHash){$('loginError').textContent='بيانات الدخول غلط';return;}
   localStorage.setItem(LS_SESSION,JSON.stringify({username:u.username,ts:Date.now()}));
   showApp(u);
-  toast('✅ أهلاً بيكي، '+u.username);
+  toast('✅ أهلاً وسهلا، '+u.username);
 }
 function doLogout(){
   localStorage.removeItem(LS_SESSION);
@@ -568,7 +568,7 @@ function doLogout(){
 }
 function setStatus(state){
   const el=$('connStatus');
-  if(state==='online'){el.textContent='🟢 متصل — مزامنة حية';el.className='status online';}
+  if(state==='online'){el.textContent='🟢 متصل — ';el.className='status online';}
   else if(state==='connecting'){el.textContent='🟡 جاري الاتصال...';el.className='status offline';}
   else{el.textContent='🔴 غير متصل (اضغطي لإعادة ضبط الاتصال)';el.className='status error';}
 }
