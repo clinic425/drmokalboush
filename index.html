@@ -1150,6 +1150,108 @@
             background: #be185d;
             color: #fff;
         }
+
+        /* ===== Accordion (Medical File collapsible sections) ===== */
+        .acc {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: #fff;
+            overflow: hidden
+        }
+        .acc-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            cursor: pointer;
+            user-select: none;
+            background: #f8fafc;
+            transition: .15s
+        }
+        .acc-head:hover {
+            background: #fdf2f8
+        }
+        .acc-head h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #7e22ce;
+            font-weight: 700
+        }
+        .acc-ic {
+            font-size: 17px;
+            color: #be185d;
+            flex: none
+        }
+        .acc-body {
+            padding: 12px;
+            border-top: 1px solid #f1f5f9
+        }
+        .acc.nested .acc-head {
+            background: #f1f5f9
+        }
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px
+        }
+        .three-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px
+        }
+        @media(max-width:800px) {
+            .two-col,
+            .three-col {
+                grid-template-columns: 1fr
+            }
+        }
+        .cond-box {
+            border-left: 3px solid #f9a8d4;
+            padding-left: 10px;
+            margin: 4px 0 8px
+        }
+        .lab-res-row {
+            display: grid;
+            grid-template-columns: 1fr 140px;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px
+        }
+        .lab-res-row input {
+            padding: 7px 9px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            width: 100%
+        }
+        .ro-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 9px;
+            padding: 10px;
+            margin-bottom: 12px;
+            font-size: 13px
+        }
+        .ro-grid b {
+            color: #9d174d
+        }
+        .bar-wrap {
+            background: #f1f5f9;
+            border-radius: 6px;
+            height: 10px;
+            overflow: hidden;
+            min-width: 80px
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #be185d, #7e22ce)
+        }
     </style>
 </head>
 <body>
@@ -1171,6 +1273,7 @@
             <div class="field"><label>Password</label><input id="loginPass" type="password" placeholder="Password"></div>
             <button class="btn primary" id="loginBtn" style="width:100%">🔑 Login</button>
             <p id="loginError" style="margin-top:10px;font-size:13px;color:#dc2626"></p>
+            <p style="margin-top:10px;text-align:center"><a href="#" id="bootstrapToggle" style="font-size:12.5px;color:#0369a1">First time here? Create the first account</a></p>
         </div>
     </div>
 
@@ -1277,7 +1380,17 @@
                         </table>
                     </div>
                 </div>
+                <div class="card">
+                    <h2>📆 Monthly Statistics</h2>
+                    <div style="overflow:auto">
+                        <table>
+                            <thead><tr><th>Month</th><th>Cases</th><th>New</th><th>Follow-up</th><th>Revenue (EGP)</th></tr></thead>
+                            <tbody id="statsMonthBody"></tbody>
+                        </table>
+                    </div>
+                </div>
                 <div class="card"><h2>🎯 Visit Purpose Distribution</h2><div id="statsPurpose" style="overflow:auto"></div></div>
+                <div class="card"><h2>📣 How Patients Found Us</h2><div id="statsSource" style="overflow:auto"></div></div>
                 <div class="card">
                     <h2>🔁 Return Rate by Age Group</h2>
                     <p style="font-size:13px;color:#64748b;margin-bottom:10px">Return rate = patients who came back for a second or more visit.</p>
@@ -1287,6 +1400,21 @@
                             <thead><tr><th>Age Group</th><th>Total Cases</th><th>Returning</th><th>Return Rate</th></tr></thead>
                             <tbody id="statsAgeBody"></tbody>
                         </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>⏰ Busiest Times</h2>
+                    <div class="two-col">
+                        <div><h3 style="font-size:14px;color:#9d174d;margin-bottom:8px">By weekday</h3><div id="statsWeekday"></div></div>
+                        <div><h3 style="font-size:14px;color:#9d174d;margin-bottom:8px">By hour</h3><div id="statsHour"></div></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>🩺 Clinical Activity</h2>
+                    <div class="three-col">
+                        <div><h3 style="font-size:14px;color:#9d174d;margin-bottom:8px">Top diagnoses</h3><div id="statsDiag"></div></div>
+                        <div><h3 style="font-size:14px;color:#9d174d;margin-bottom:8px">Top medications</h3><div id="statsMeds"></div></div>
+                        <div><h3 style="font-size:14px;color:#9d174d;margin-bottom:8px">Top lab tests</h3><div id="statsLabs"></div></div>
                     </div>
                 </div>
             </section>
@@ -1330,35 +1458,22 @@
                     <div class="set-card"><h3>📣 How did you know us?</h3>
                         <div class="add-row"><input id="newSource" placeholder="e.g. Facebook"><button class="btn primary sm" id="addSourceBtn">Add</button></div>
                         <ul class="set-list" id="list-sources"></ul></div>
-                    <div class="set-card"><h3>🩺 Medical History Items</h3>
-                        <div class="add-row"><input id="newHistOpt" placeholder="e.g. Previous C-Section"><button class="btn primary sm" id="addHistOptBtn">Add</button></div>
-                        <ul class="set-list" id="list-historyOptions"></ul></div>
-                    <div class="set-card"><h3> Chronic Conditions</h3>
-                        <div class="add-row"><input id="newChronicOpt" placeholder="e.g. Diabetes"><button class="btn primary sm" id="addChronicOptBtn">Add</button></div>
-                        <ul class="set-list" id="list-chronicOptions"></ul></div>
+                    <div class="set-card"><h3>🧪 Lab Tests <span style="font-weight:normal;color:#64748b;font-size:12px">(prescription + medical file)</span></h3>
+                        <div class="add-row"><input id="newLabTestOpt" placeholder="e.g. AMH"><button class="btn primary sm" id="addLabTestOptBtn">Add</button></div>
+                        <ul class="set-list" id="list-rxLabTests"></ul></div>
                 </div>
 
                 <!-- Print Settings -->
                 <div class="card">
                     <h2>🖨 Print Settings</h2>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
-                        <div>
-                            <h3 style="font-size:15px;color:#9d174d;margin-bottom:8px">Prescription Order</h3>
-                            <p style="font-size:12px;color:#64748b;margin-bottom:8px">Drag or use buttons to reorder sections (top = appears first)</p>
-                            <div id="prescriptionOrderList"></div>
-                        </div>
-                        <div>
-                            <h3 style="font-size:15px;color:#9d174d;margin-bottom:8px">Custom Headers</h3>
-                            <div class="field"><label>Prescription Header</label><input id="rxHeader" placeholder="Header text"></div>
-                            <div class="field"><label>Medical File Header</label><input id="mfHeader" placeholder="Header text"></div>
-                            <button class="btn primary sm" id="saveHeadersBtn">💾 Save Headers</button>
-                        </div>
-                    </div>
+                    <h3 style="font-size:15px;color:#9d174d;margin-bottom:8px">Prescription Order</h3>
+                    <p style="font-size:12px;color:#64748b;margin-bottom:8px">Use the buttons to reorder sections (top = appears first)</p>
+                    <div id="prescriptionOrderList"></div>
                 </div>
 
                 <div class="card">
                     <h2>🔒 User Management</h2>
-                    <p style="font-size:12.5px;color:#16a34a;margin-bottom:10px">✅ Uses Supabase Auth — passwords encrypted, RLS protects all data.</p>
+                    <p style="font-size:12.5px;color:#16a34a;margin-bottom:10px">✅ Uses Supabase Auth — passwords encrypted, RLS protects all data. The same account works on <b>any device</b>: just log in, you are never asked to register again.</p>
                     <div class="add-row">
                         <input id="newUserName" placeholder="New username">
                         <input id="newUserPass" type="password" placeholder="Password (min 6 chars)" style="max-width:200px">
@@ -1376,14 +1491,17 @@
                     <label class="btn blue sm" style="cursor:pointer;display:inline-block">➕ Upload Video<input type="file" id="tvVideoInput" accept="video/*" multiple hidden></label>
                     <button class="btn gray sm" id="openTvBtn">🖥 Open TV Display</button>
                     <div id="tvVideosList" style="margin-top:12px"></div>
-                </div>
-                <div class="card">
-                    <h2>💾 Backup</h2>
+                               <div class="card">
+                    <h2>💾 Backup &amp; Restore</h2>
                     <div class="toolbar">
                         <button class="btn blue" id="exportBackupBtn">📤 Export Backup (JSON)</button>
+                        <button class="btn primary" id="importBackupBtn" style="background:#16a34a;">📥 Import Backup (JSON)</button>
                     </div>
-                    <p style="font-size:13px;color:#64748b">✅ All data is synced live via Supabase and appears instantly on all connected devices — backup is for safety only.</p>
+                    <p style="font-size:13px;color:#64748b;margin-top:8px">
+                        ✅ Use "Export" to download all data as a JSON file. Use "Import" to restore from a previously downloaded backup file.
+                    </p>
                 </div>
+
             </section>
         </main>
 
@@ -1448,116 +1566,275 @@
                 <div id="pfNextVisitBanner" style="display:none"></div>
                 <div class="pf-grid">
                     <div class="set-card">
-                        <h3>🩺 O&amp;G / Infertility History</h3>
-                        <!-- Medical History & Chronic Conditions inside O&G -->
-                        <div style="margin:12px 0;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0">
-                            <h4 style="color:#7e22ce;font-size:14px;margin-bottom:8px">Medical History</h4>
-                            <div class="check-grid" id="pfHistoryGrid"></div>
-                            <div class="add-row"><input id="pfHistoryNew" placeholder="Add item and press Enter"></div>
-                            <label class="flabel">Additional Notes</label>
-                            <textarea id="pfHistoryNotes" class="og-ta"></textarea>
+                        <h3>📋 Patient Details &amp; History</h3>
 
-                            <h4 style="color:#7e22ce;font-size:14px;margin:16px 0 8px">Chronic Conditions</h4>
-                            <div class="check-grid" id="pfChronicGrid"></div>
-                            <div class="add-row"><input id="pfChronicNew" placeholder="Add item and press Enter"></div>
-                            <label class="flabel">Additional Notes</label>
-                            <textarea id="pfChronicNotes" class="og-ta"></textarea>
-                            <button class="btn primary sm" id="pfSaveMed" style="margin-top:10px">💾 Save Medical History</button>      
-                        </div>
+                        <div class="ro-grid" id="pfIdentity"></div>
 
-                        <div class="og-head" onclick="toggleOgSection()" style="margin-top:12px">
-                            <h4 style="margin:0;color:#7e22ce;font-size:14px">▸ O&amp;G Details</h4>
-                            <span id="ogToggleIcon" style="font-size:18px;color:#be185d">▾</span>
-                        </div>
-                        <div id="ogBody" style="display:none;margin-top:12px">
-                            <div class="pf-grid">
-                                <div>
-                                    <label class="flabel">Menstrual History</label>
-                                    <div class="og-row">
-                                        <select id="og_menstrualRegularity" class="og-input"><option value="">Regularity</option><option>Regular</option><option>Irregular</option></select>
-                                        <input id="og_cycleDays" type="number" min="0" class="og-input" placeholder="Cycle (days)">
-                                        <input id="og_durationDays" type="number" min="0" class="og-input" placeholder="Duration (days)">
-                                    </div>
-                                    <label class="flabel">Obstetric History</label>
-                                    <textarea id="og_obstetric" class="og-ta" placeholder="Previous pregnancies, deliveries, complications..."></textarea>
-                                    <label class="flabel">Past History — Medical</label>
-                                    <textarea id="og_pastMedical" class="og-ta"></textarea>
-                                    <label class="flabel">Past History — Surgical</label>
-                                    <textarea id="og_pastSurgical" class="og-ta"></textarea>
-                                    <label class="flabel">Infertility Management</label>
-                                    <input id="og_laparoscope" class="og-input" placeholder="Laparoscope">
-                                    <input id="og_hystroscope" class="og-input" placeholder="Hystroscope">
-                                    <input id="og_icsi" class="og-input" placeholder="ICSI">
-                                    <label class="flabel">Contraceptive History</label>
-                                    <textarea id="og_contraceptive" class="og-ta"></textarea>
-                                </div>
-                                <div>
-                                    <label class="flabel">Complaint</label>
-                                    <textarea id="og_complaint" class="og-ta"></textarea>
-                                    <label class="flabel">Present History</label>
-                                    <textarea id="og_presentHistory" class="og-ta"></textarea>
-                                    <label class="flabel">Investigations — Labs</label>
-                                    <textarea id="og_invLabs" class="og-ta"></textarea>
-                                    <div class="og-row">
-                                        <input id="og_hsg" class="og-input" placeholder="HSG">
-                                        <input id="og_semen" class="og-input" placeholder="Semen">
-                                    </div>
-                                    <label class="flabel">USS / 3D</label>
-                                    <textarea id="og_uss3d" class="og-ta"></textarea>
-                                </div>
+                        <!-- ============ PERSONAL DETAILS ============ -->
+                        <div class="acc">
+                            <div class="acc-head" onclick="toggleAcc('accPersonal')">
+                                <h4>📋 Personal Details</h4><span class="acc-ic" id="ic-accPersonal">▾</span>
                             </div>
-                            <div class="pf-grid">
-                                <div>
-                                    <label class="flabel">Examination</label>
-                                    <select id="og_examMethod" class="og-input"><option value="">-- Select method --</option><option>Transvaginal (TVUS)</option><option>Transabdominal (TAUS)</option></select>
-                                    <div id="og_examFields" style="display:none">
-                                        <label class="flabel">Uterus</label>
-                                        <textarea id="og_uterus" class="og-ta" placeholder="Uterus"></textarea>
-                                        <div class="og-row">
-                                            <div style="flex:1;min-width:140px"><label class="flabel">RT Adnexa</label><textarea id="og_rtAdnexa" class="og-ta" placeholder="RT Adnexa"></textarea></div>
-                                            <div style="flex:1;min-width:140px"><label class="flabel">LT Adnexa</label><textarea id="og_ltAdnexa" class="og-ta" placeholder="LT Adnexa"></textarea></div>
+                            <div class="acc-body" id="accPersonal" style="display:none">
+
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accMarital')">
+                                        <h4>💍 Marital Status</h4><span class="acc-ic" id="ic-accMarital">▾</span>
+                                    </div>
+                                    <div class="acc-body" id="accMarital" style="display:none">
+                                        <label class="flabel">Marital Status</label>
+                                        <select id="pd_maritalStatus" class="og-input"><option value="">-- Select --</option><option>Virgin</option><option>Married</option><option>Divorced</option><option>Widow</option></select>
+                                        <label class="flabel">First Marriage?</label>
+                                        <select id="pd_isFirstMarriage" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+                                        <div id="pd_offspringWrap" class="cond-box" style="display:none">
+                                            <label class="flabel">Offspring?</label>
+                                            <select id="pd_hasChildren" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+                                            <div id="pd_offspringCountWrap" style="display:none">
+                                                <label class="flabel">Number of offspring</label>
+                                                <input id="pd_childrenCount" type="number" min="0" class="og-input" placeholder="Type their number">
+                                            </div>
                                         </div>
-                                        <label class="flabel">Pelvis</label>
-                                        <textarea id="og_pelvis" class="og-ta" placeholder="Pelvis"></textarea>
-                                        <label class="flabel">Other</label>
-                                        <textarea id="og_examOther" class="og-ta" placeholder="Other"></textarea>
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="flabel">Impression</label>
-                                    <textarea id="og_impression" class="og-ta" style="min-height:130px"></textarea>
+
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accHusband')">
+                                        <h4>🤵 Husband Details</h4><span class="acc-ic" id="ic-accHusband">▾</span>
+                                    </div>
+                                    <div class="acc-body" id="accHusband" style="display:none">
+                                        <div class="three-col">
+                                            <div><label class="flabel">Husband Name</label><input id="pd_husbandName" class="og-input"></div>
+                                            <div><label class="flabel">Husband Age</label><input id="pd_husbandAge" type="number" min="0" class="og-input"></div>
+                                            <div><label class="flabel">Husband Job</label><input id="pd_husbandJob" class="og-input"></div>
+                                        </div>
+                                        <label class="flabel">Husband Smoker?</label>
+                                        <select id="pd_husbandSmoker" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+                                        <label class="flabel">Husband Diseased?</label>
+                                        <select id="pd_husbandDiseased" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+                                        <div id="pd_husbandDiseaseWrap" class="cond-box" style="display:none">
+                                            <label class="flabel">Diseases</label>
+                                            <textarea id="pd_husbandDiseaseText" class="og-ta" placeholder="Type the diseases..."></textarea>
+                                        </div>
+                                        <label class="flabel">First Marriage?</label>
+                                        <select id="pd_husbandFirstMarriage" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+                                        <div id="pd_husbandOffspringWrap" class="cond-box" style="display:none">
+                                            <label class="flabel">Offspring?</label>
+                                            <select id="pd_husbandOffspring" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+                                            <div id="pd_husbandOffspringCountWrap" style="display:none">
+                                                <label class="flabel">Number of offspring</label>
+                                                <input id="pd_husbandOffspringCount" type="number" min="0" class="og-input" placeholder="Type their number">
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+
+                                <button class="btn primary sm" id="pdSaveBtn" style="margin-top:8px">💾 Save Personal Details</button>
                             </div>
-                            <label class="flabel">Management</label>
-                            <div class="pf-grid">
-                                <div>
-                                    <label class="flabel">Weight reduction?</label>
-                                    <select id="og_weightReduction" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
-                                    <label class="flabel">Labs</label>
-                                    <textarea id="og_mgmtLabs" class="og-ta" placeholder="Labs"></textarea>
-                                </div>
-                                <div>
-                                    <label class="flabel">Vitamins / Drugs</label>
-                                    <textarea id="og_mgmtVitamins" class="og-ta" placeholder="Vitamins / Drugs"></textarea>
-                                    <label class="flabel">Treatment Plan</label>
-                                    <textarea id="og_mgmtPlan" class="og-ta" placeholder="Treatment Plan"></textarea>
-                                </div>
-                            </div>
-                            <p style="font-size:11.5px;color:#94a3b8;margin:4px 0 0">💡 Each new line gets a bullet automatically — press Enter to start a new line.</p>
-                            <button class="btn primary sm" id="ogSaveBtn" style="margin-top:8px">💾 Save O&amp;G History</button>
                         </div>
+
+                        <!-- ============ HISTORY ============ -->
+                        <div class="acc">
+                            <div class="acc-head" onclick="toggleAcc('accHistory')">
+                                <h4>🩺 History</h4><span class="acc-ic" id="ic-accHistory">▾</span>
+                            </div>
+                            <div class="acc-body" id="accHistory" style="display:none">
+
+                                <!-- 1 — Menstrual History -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accMenstrual')"><h4>Menstrual History</h4><span class="acc-ic" id="ic-accMenstrual">▾</span></div>
+                                    <div class="acc-body" id="accMenstrual" style="display:none">
+                                        <div class="og-row">
+                                            <select id="og_menstrualRegularity" class="og-input"><option value="">Regularity</option><option>Regular</option><option>Irregular</option></select>
+                                            <input id="og_cycleDays" type="number" min="0" class="og-input" placeholder="Cycle (days)">
+                                            <input id="og_durationDays" type="number" min="0" class="og-input" placeholder="Duration (days)">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2 — Obstetric History -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accObstetric')"><h4>Obstetric History</h4><span class="acc-ic" id="ic-accObstetric">▾</span></div>
+                                    <div class="acc-body" id="accObstetric" style="display:none">
+                                        <label class="flabel">Number of deliveries</label>
+                                        <input id="og_deliveriesCount" type="number" min="0" class="og-input" placeholder="Number of deliveries">
+                                        <label class="flabel">Type of deliveries <span style="font-weight:400;color:#94a3b8">(both types can be selected)</span></label>
+                                        <div class="two-col">
+                                            <div>
+                                                <label class="check-item" style="width:100%"><input type="checkbox" id="og_delNormalOn" onchange="toggleWrap('og_delNormalWrap',this.checked)"> Normal Delivery</label>
+                                                <div id="og_delNormalWrap" style="display:none;margin-top:6px"><input id="og_delNormalCount" type="number" min="0" class="og-input" placeholder="How many normal deliveries"></div>
+                                            </div>
+                                            <div>
+                                                <label class="check-item" style="width:100%"><input type="checkbox" id="og_delCsOn" onchange="toggleWrap('og_delCsWrap',this.checked)"> Cesarean Section (C-Section)</label>
+                                                <div id="og_delCsWrap" style="display:none;margin-top:6px"><input id="og_delCsCount" type="number" min="0" class="og-input" placeholder="How many C-sections"></div>
+                                            </div>
+                                        </div>
+                                        <label class="flabel">Notes</label>
+                                        <textarea id="og_obstetricNotes" class="og-ta" placeholder="Previous pregnancies, complications..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 3 — Past History -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accPast')"><h4>Past History</h4><span class="acc-ic" id="ic-accPast">▾</span></div>
+                                    <div class="acc-body" id="accPast" style="display:none">
+                                        <label class="flabel">Medical History</label>
+                                        <textarea id="og_pastMedical" class="og-ta"></textarea>
+                                        <label class="flabel">Surgical History</label>
+                                        <textarea id="og_pastSurgical" class="og-ta"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 4 — Infertility Management -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accInfertility')"><h4>Infertility Management</h4><span class="acc-ic" id="ic-accInfertility">▾</span></div>
+                                    <div class="acc-body" id="accInfertility" style="display:none">
+                                        <label class="check-item" style="width:100%"><input type="checkbox" id="og_lapOn" onchange="toggleWrap('og_lapWrap',this.checked)"> Laparoscope</label>
+                                        <div id="og_lapWrap" class="cond-box" style="display:none"><textarea id="og_laparoscope" class="og-ta" placeholder="Laparoscope details..."></textarea></div>
+                                        <label class="check-item" style="width:100%"><input type="checkbox" id="og_hysOn" onchange="toggleWrap('og_hysWrap',this.checked)"> Hysteroscope</label>
+                                        <div id="og_hysWrap" class="cond-box" style="display:none"><textarea id="og_hystroscope" class="og-ta" placeholder="Hysteroscope details..."></textarea></div>
+                                        <label class="check-item" style="width:100%"><input type="checkbox" id="og_icsiOn" onchange="toggleWrap('og_icsiWrap',this.checked)"> ICSI</label>
+                                        <div id="og_icsiWrap" class="cond-box" style="display:none"><textarea id="og_icsi" class="og-ta" placeholder="ICSI details..."></textarea></div>
+                                    </div>
+                                </div>
+
+                                <!-- 5 — Contraceptive History -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accContraceptive')"><h4>Contraceptive History</h4><span class="acc-ic" id="ic-accContraceptive">▾</span></div>
+                                    <div class="acc-body" id="accContraceptive" style="display:none">
+                                        <textarea id="og_contraceptive" class="og-ta"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 6 — Complaint -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accComplaint')"><h4>Complaint</h4><span class="acc-ic" id="ic-accComplaint">▾</span></div>
+                                    <div class="acc-body" id="accComplaint" style="display:none">
+                                        <textarea id="og_complaint" class="og-ta"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 7 — Present History -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accPresent')"><h4>Present History</h4><span class="acc-ic" id="ic-accPresent">▾</span></div>
+                                    <div class="acc-body" id="accPresent" style="display:none">
+                                        <textarea id="og_presentHistory" class="og-ta"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 8 — Investigation -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accInvestigation')"><h4>Investigation</h4><span class="acc-ic" id="ic-accInvestigation">▾</span></div>
+                                    <div class="acc-body" id="accInvestigation" style="display:none">
+
+                                        <label class="flabel">HSG</label>
+                                        <select id="og_hsg" class="og-input"><option value="">-- Select --</option><option>Normal</option><option>Abnormal</option></select>
+                                        <div id="og_hsgReasonWrap" class="cond-box" style="display:none">
+                                            <label class="flabel">Reason / findings</label>
+                                            <textarea id="og_hsgReason" class="og-ta" placeholder="Type the reason..."></textarea>
+                                        </div>
+
+                                        <label class="flabel">USS / 3D</label>
+                                        <select id="og_uss" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+                                        <div id="og_ussTypeWrap" class="cond-box" style="display:none">
+                                            <label class="flabel">Type</label>
+                                            <select id="og_ussType" class="og-input"><option value="">-- Select --</option><option>2D</option><option>3D</option></select>
+                                            <label class="flabel">Findings</label>
+                                            <textarea id="og_ussFindings" class="og-ta" placeholder="USS findings..."></textarea>
+                                        </div>
+
+                                        <label class="check-item" style="width:100%;margin-top:8px"><input type="checkbox" id="og_semenOn" onchange="toggleWrap('og_semenWrap',this.checked)"> Semen Analysis</label>
+                                        <div id="og_semenWrap" class="cond-box" style="display:none">
+                                            <div class="two-col">
+                                                <div><label class="flabel">Date</label><input id="og_semenDate" type="date" class="og-input"></div>
+                                                <div><label class="flabel">Lab name</label><input id="og_semenLab" class="og-input" placeholder="Lab name"></div>
+                                            </div>
+                                            <div class="two-col">
+                                                <div><label class="flabel">Volume (ml)</label><input id="og_semenVolume" type="number" min="0" step="any" class="og-input" placeholder="ml"></div>
+                                                <div><label class="flabel">Count (M/ml)</label><input id="og_semenCount" type="number" min="0" step="any" class="og-input" placeholder="M/ml"></div>
+                                            </div>
+                                            <div class="two-col">
+                                                <div><label class="flabel">Progressive % (pr%)</label><input id="og_semenPr" type="number" min="0" max="100" step="any" class="og-input" placeholder="pr %"></div>
+                                                <div><label class="flabel">Normal %</label><input id="og_semenNormal" type="number" min="0" max="100" step="any" class="og-input" placeholder="normal %"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="acc nested" style="margin-top:10px">
+                                            <div class="acc-head" onclick="toggleAcc('accInvLabs')"><h4>🧪 Lab Results — Add New Result</h4><span class="acc-ic" id="ic-accInvLabs">▾</span></div>
+                                            <div class="acc-body" id="accInvLabs" style="display:none">
+                                                <div style="display:grid;grid-template-columns:1.6fr 1.3fr 1.3fr 90px 38px;gap:8px;font-size:12px;color:#94a3b8;margin-bottom:4px"><span>Test Name</span><span>Result</span><span>Notes</span><span>Date</span><span></span></div>
+                                                <div id="labRows"></div>
+                                                <div class="toolbar" style="margin-top:8px"><button class="btn gray sm" id="labAddRowBtn">➕ Add Test</button></div>
+                                            </div>
+                                        </div>
+
+                                        <div id="og_invLegacyWrap" style="display:none;margin-top:10px">
+                                            <label class="flabel">Earlier free-text investigation notes</label>
+                                            <textarea id="og_invLegacy" class="og-ta"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 9 — Examination -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accExam')"><h4>Examination</h4><span class="acc-ic" id="ic-accExam">▾</span></div>
+                                    <div class="acc-body" id="accExam" style="display:none">
+                                        <select id="og_examMethod" class="og-input"><option value="">-- Select method --</option><option>Transvaginal (TVUS)</option><option>Transabdominal (TAUS)</option></select>
+                                        <div id="og_examFields" style="display:none">
+                                            <label class="flabel">Uterus</label>
+                                            <textarea id="og_uterus" class="og-ta" placeholder="Uterus"></textarea>
+                                            <div class="og-row">
+                                                <div style="flex:1;min-width:140px"><label class="flabel">RT Adnexa</label><textarea id="og_rtAdnexa" class="og-ta" placeholder="RT Adnexa"></textarea></div>
+                                                <div style="flex:1;min-width:140px"><label class="flabel">LT Adnexa</label><textarea id="og_ltAdnexa" class="og-ta" placeholder="LT Adnexa"></textarea></div>
+                                            </div>
+                                            <label class="flabel">Pelvis</label>
+                                            <textarea id="og_pelvis" class="og-ta" placeholder="Pelvis"></textarea>
+                                            <label class="flabel">Other</label>
+                                            <textarea id="og_examOther" class="og-ta" placeholder="Other"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 10 — Impression -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accImpression')"><h4>Impression</h4><span class="acc-ic" id="ic-accImpression">▾</span></div>
+                                    <div class="acc-body" id="accImpression" style="display:none">
+                                        <textarea id="og_impression" class="og-ta" style="min-height:130px"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- 11 — Management -->
+                                <div class="acc nested">
+                                    <div class="acc-head" onclick="toggleAcc('accManagement')"><h4>Management</h4><span class="acc-ic" id="ic-accManagement">▾</span></div>
+                                    <div class="acc-body" id="accManagement" style="display:none">
+                                        <label class="flabel">Wt</label>
+                                        <select id="og_weightReduction" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+
+                                        <div class="acc nested">
+                                            <div class="acc-head" onclick="toggleAcc('accMgmtVit')"><h4>Vitamins / Drugs</h4><span class="acc-ic" id="ic-accMgmtVit">▾</span></div>
+                                            <div class="acc-body" id="accMgmtVit" style="display:none"><textarea id="og_mgmtVitamins" class="og-ta" placeholder="Vitamins / Drugs"></textarea></div>
+                                        </div>
+                                        <div class="acc nested">
+                                            <div class="acc-head" onclick="toggleAcc('accMgmtLabs')"><h4>Labs</h4><span class="acc-ic" id="ic-accMgmtLabs">▾</span></div>
+                                            <div class="acc-body" id="accMgmtLabs" style="display:none"><textarea id="og_mgmtLabs" class="og-ta" placeholder="Labs to request"></textarea></div>
+                                        </div>
+                                        <div class="acc nested">
+                                            <div class="acc-head" onclick="toggleAcc('accMgmtPlan')"><h4>Treatment Plan</h4><span class="acc-ic" id="ic-accMgmtPlan">▾</span></div>
+                                            <div class="acc-body" id="accMgmtPlan" style="display:none"><textarea id="og_mgmtPlan" class="og-ta" placeholder="Treatment Plan"></textarea></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <p style="font-size:11.5px;color:#94a3b8;margin:6px 0 0">💡 Each new line gets a bullet automatically — press Enter to start a new line.</p>
+                            </div>
+                        </div>
+
+                        <button class="btn primary sm" id="ogSaveBtn" style="margin-top:8px">💾 Save History</button>
                     </div>
                     <div class="set-card">
                         <h3> Imaging / Attachments</h3>
                         <label class="btn blue sm" style="cursor:pointer;display:inline-block">➕ Add Image<input type="file" id="pfFileInput" accept="image/*" multiple hidden></label>
                         <div id="pfAttachments" class="att-grid" style="margin-top:10px"></div>
                     </div>
-                </div>
-                <div class="set-card" style="margin-top:12px">
-                    <h3>🧪 Lab Results — Add New Result</h3>
-                    <div style="display:grid;grid-template-columns:1.6fr 1.3fr 1.3fr 90px 38px;gap:8px;font-size:12px;color:#94a3b8;margin-bottom:4px"><span>Test Name</span><span>Result</span><span>Notes</span><span>Date</span><span></span></div>
-                    <div id="labRows"></div>
-                    <div class="toolbar" style="margin-top:8px"><button class="btn gray sm" id="labAddRowBtn">➕ Add Test</button></div>
                 </div>
                 <div class="set-card" style="margin-top:12px">
                     <h3>📅 Visit History <span style="font-weight:normal;color:#64748b;font-size:12px">(labs &amp; prescriptions per visit — click to expand)</span></h3>
@@ -1623,6 +1900,27 @@
 
         function num(x) { const n = parseFloat(x); return isNaN(n) ? 0 : n; }
 
+        // ===== VISIT TYPE NORMALISATION =====
+        // The form stores Arabic values ('كشف' / 'متابعه') while all pricing & statistics logic
+        // reasons about "new" vs "follow-up". This maps either language onto one kind.
+        const VT_NEW = ['كشف', 'كشف نسا', 'new', 'exam', 'examination'];
+        const VT_FOLLOWUP = ['متابعه', 'متابعة', 'follow-up', 'followup', 'follow up'];
+
+        function vtKind(t) {
+            const s = String(t ?? '').trim().toLowerCase();
+            if (!s) return '';
+            if (VT_NEW.includes(s)) return 'new';
+            if (VT_FOLLOWUP.includes(s)) return 'followup';
+            return '';
+        }
+
+        function isNewVisit(t) { return vtKind(t) === 'new'; }
+
+        function isFollowupVisit(t) { return vtKind(t) === 'followup'; }
+
+        // Value written when the app pre-fills a follow-up booking (must match a Visit Type option).
+        const VT_FOLLOWUP_VALUE = 'متابعه';
+
         function todayStr() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2,
                 '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 
@@ -1646,7 +1944,8 @@
             el.textContent = msg;
             el.classList.add('show');
             clearTimeout(el._h);
-            el._h = setTimeout(() => el.classList.remove('show'), 2600); }
+            // Error toasts carry a reason now, so give them longer on screen to be read.
+            el._h = setTimeout(() => el.classList.remove('show'), msg && msg.startsWith('❌') ? 6000 : 2600); }
 
         async function sha256Hex(str) {
             const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -1674,22 +1973,38 @@
         }
 
         async function showLoginOrBootstrap() {
-            let count = 0;
+            // Only offer account creation when the database genuinely has no staff yet.
+            // If the check itself fails we fall back to the normal login screen — otherwise a
+            // blocked/failing staff_count() makes the app ask to "create an account" every time.
+            let count = null;
             try {
                 const { data: c, error } = await sb.rpc('staff_count');
                 if (error) throw error;
-                count = c || 0;
-            } catch (e) { console.error(e);
-                showGlobalError(e); return; }
+                count = Number(c) || 0;
+            } catch (e) { console.warn('staff_count unavailable — showing normal login:', e); }
             bootstrapMode = (count === 0);
+            paintLoginScreen();
+            $('appRoot').style.display = 'none';
+            $('loginScreen').style.display = 'block';
+        }
+
+        function paintLoginScreen() {
             $('loginTitle').textContent = bootstrapMode ? ' Create First Admin Account' : '⚕ Login';
             $('loginDesc').textContent = bootstrapMode ?
                 'No users registered yet — choose a username and password (min 6 characters) to create the first admin account.'
                 :
-                'Enter your username and password to access the clinic system.';
+                'Enter your username and password. The same account works on every device — you stay logged in until you press Logout.';
             $('loginBtn').textContent = bootstrapMode ? '🆕 Create Account' : '🔑 Login';
-            $('appRoot').style.display = 'none';
-            $('loginScreen').style.display = 'block';
+            $('bootstrapToggle').textContent = bootstrapMode ? '← Back to login' :
+                'First time here? Create the first account';
+        }
+
+        // Manual escape hatch: lets the very first account be created even if staff_count() is
+        // unavailable, without the app defaulting to "register" on every load.
+        function toggleBootstrapMode() {
+            bootstrapMode = !bootstrapMode;
+            $('loginError').textContent = '';
+            paintLoginScreen();
         }
 
         function showGlobalError(e) {
@@ -1740,7 +2055,6 @@
             fillFormSelects();
             renderAll();
             loadPrintOrder();
-            loadHeaders();
         }
 
         async function doLogin() {
@@ -1758,15 +2072,32 @@
         async function doBootstrap(username, pass) {
             if (pass.length < 6) { $('loginError').textContent = 'Password must be at least 6 characters'; return; }
             const email = await emailFor(username);
-            const { data: sdata, error } = await sb.auth.signUp({ email, password: pass });
-            if (error) { $('loginError').textContent = 'Error: ' + (error.message || ''); return; }
-            const userId = sdata.user && sdata.user.id;
+            let { data: sdata, error } = await sb.auth.signUp({ email, password: pass });
+            if (error) {
+                // The auth user may already exist from an earlier attempt whose profile row failed.
+                const signIn = await sb.auth.signInWithPassword({ email, password: pass });
+                if (signIn.error) { $('loginError').textContent = 'Error: ' + (error.message || ''); return; }
+                sdata = signIn.data;
+            }
+            if (!sdata.session) {
+                // signUp returned no session — sign in explicitly. The profile row has to be written
+                // while authenticated, otherwise RLS rejects it and the app keeps believing no staff exists.
+                const signIn = await sb.auth.signInWithPassword({ email, password: pass });
+                if (signIn.error) {
+                    $('loginError').textContent =
+                        'Account created, but email confirmation is switched on in Supabase. Turn off "Confirm email" under Authentication → Providers, then log in.';
+                    return;
+                }
+                sdata = signIn.data;
+            }
+            const userId = (sdata.user && sdata.user.id) || (sdata.session && sdata.session.user.id);
             if (!userId) { $('loginError').textContent = 'Unexpected error'; return; }
-            const { error: insErr } = await sb.from('staff_profiles').insert({ id: userId, username, blocked: false,
+            const { error: insErr } = await sb.from('staff_profiles').upsert({ id: userId, username, blocked: false,
                 created_at: Date.now() });
-            if (insErr) { $('loginError').textContent = 'Account created but error: ' + insErr.message; return; }
-            if (sdata.session) { toast('✅ Admin account created successfully');
-                await afterLogin(sdata.session); }
+            if (insErr) { $('loginError').textContent = 'Account created but profile failed: ' + insErr.message; return; }
+            toast('✅ Admin account created successfully');
+            bootstrapMode = false;
+            await afterLogin(sdata.session);
         }
 
         async function doLogout() {
@@ -1799,7 +2130,7 @@
             staffProfiles: [],
             medicalFiles: [],
             settings: { clinicName: '', examPrice: 0, followupPrice: 0, sources: [], visitPurposes: [],
-                historyOptions: [], chronicOptions: [], tvVideos: [], rxHeader: '', mfHeader: '',
+                rxLabTests: [], tvVideos: [],
                 prescriptionOrder: ['patientInfo', 'diagnosis', 'medications', 'labs', 'footer'] }
         };
 
@@ -1834,16 +2165,10 @@
                 ],
                 visitPurposes: data.settings.visitPurposes && data.settings.visitPurposes.length ? data.settings
                     .visitPurposes : ['كسف نسا', 'متابعة حمل', 'تاخر حمل'],
-                historyOptions: data.settings.historyOptions && data.settings.historyOptions.length ? data.settings
-                    .historyOptions : ['Previous C-Section', 'Previous Normal Delivery', 'Miscarriage', 'Drug Allergy'],
-                chronicOptions: data.settings.chronicOptions && data.settings.chronicOptions.length ? data.settings
-                    .chronicOptions : ['Diabetes', 'Hypertension', 'Thyroid Disorder', 'Anemia'],
                 rxLabTests: data.settings.rxLabTests && data.settings.rxLabTests.length ? data.settings.rxLabTests : [
                     'CBC', 'FSH', 'LH', 'Prolactin', 'Estradiol (E2)', 'Progesterone', 'AMH', 'TSH', 'Free T4',
                     'Toxoplasma IgG/IgM', 'Rubella IgG/IgM', 'CMV IgG/IgM'
                 ],
-                rxHeader: data.settings.rxHeader || '',
-                mfHeader: data.settings.mfHeader || '',
                 prescriptionOrder: data.settings.prescriptionOrder && data.settings.prescriptionOrder.length ? data
                     .settings.prescriptionOrder : ['patientInfo', 'diagnosis', 'medications', 'labs', 'footer']
             };
@@ -1854,116 +2179,197 @@
             }
         }
 
-        function fromRow(store, r) {
-            if (store === 'patients') return {
-                id: r.id,
-                name: r.name,
-                age: r.age,
-                address: r.address || '',
-                husbandName: r.husband_name,
-                husbandJob: r.husband_job,
-                phone: r.phone,
-                visitPurpose: r.visit_purpose,
-                visitType: r.visit_type,
-                sourceCategory: r.source_category || '',
-                sourceSocial: r.source_social || '',
-                sourceFriendName: r.source_friend_name || '',
-                sourceDoctorName: r.source_doctor_name || '',
-                sourceStreetDetails: r.source_street_details || '',
-                sourceOther: r.source_other || '',
-                date: r.date,
-                time: r.time ? r.time.slice(0, 5) : '',
-                status: r.status,
-                notes: r.notes,
-                history: r.history || { checked: [], notes: '' },
-                chronic: r.chronic || { checked: [], notes: '' },
-                createdAt: r.created_at,
-                calledAt: r.called_at,
-                maritalStatus: r.marital_status || '',
-                isFirstMarriage: r.is_first_marriage || '',
-                marriedYears: r.married_years,
-                hasChildren: r.has_children || '',
-                childrenCount: r.children_count,
-                deliveryType: r.delivery_type || '',
-                husbandAge: r.husband_age,
-                husbandSmoker: r.husband_smoker || '',
-                husbandDiseased: r.husband_diseased || '',
-                husbandDiseaseText: r.husband_disease_text || '',
-                ogHistory: r.og_history || {}
-            };
-            if (store === 'visits') return { id: r.id, patientId: r.patient_id, date: r.date, time: r.time ? r.time.slice(0,
-                    5) : '', visitPurpose: r.visit_purpose, visitType: r.visit_type, notes: r.notes, ts: r.ts };
-            if (store === 'prescriptions') return { id: r.id, patientId: r.patient_id, patientName: r.patient_name,
-                patientAge: r.patient_age, diagnosis: r.diagnosis, meds: r.meds || [], labs: r.labs || [], date: r.date,
-                ts: r.ts };
-            if (store === 'labResults') return { id: r.id, patientId: r.patient_id, testName: r.test_name, result: r.result,
-                notes: r.notes, date: r.date, ts: r.ts };
-            if (store === 'attachments') return { id: r.id, patientId: r.patient_id, path: r.path, url: r.url, name: r.name,
-                ts: r.ts };
-            if (store === 'chat') return { id: r.id, from: r.from_id, fromName: r.from_name, to: r.to_id, toName: r
-                    .to_name, text: r.text, ts: r.ts, type: 'pm' };
-            if (store === 'staffProfiles') return { id: r.id, username: r.username, blocked: !!r.blocked, createdAt: r
-                    .created_at };
-            if (store === 'medicalFiles') return { id: r.id, patientId: r.patient_id, comment: r.comment, timestamp: r
-                    .timestamp, data: r.data || {} };
-            return r;
-        }
-
-        function toRow(store, p) {
-            if (store === 'patients') return {
-                id: p.id,
-                name: p.name,
-                age: p.age ? +p.age : null,
-                address: p.address || '',
-                husband_name: p.husbandName || '',
-                husband_job: p.husbandJob || '',
-                phone: p.phone || '',
-                visit_purpose: p.visitPurpose || '',
-                visit_type: p.visitType || '',
-                source_category: p.sourceCategory || '',
-                source_social: p.sourceSocial || '',
-                source_friend_name: p.sourceFriendName || '',
-                source_doctor_name: p.sourceDoctorName || '',
-                source_street_details: p.sourceStreetDetails || '',
-                source_other: p.sourceOther || '',
-                date: p.date || null,
-                time: p.time || null,
-                status: p.status || 'Waiting',
-                notes: p.notes || '',
-                history: p.history || { checked: [], notes: '' },
-                chronic: p.chronic || { checked: [], notes: '' },
-                created_at: p.createdAt || Date.now(),
-                called_at: p.calledAt || null,
-                marital_status: p.maritalStatus || '',
-                is_first_marriage: p.isFirstMarriage || '',
-                married_years: p.marriedYears ? +p.marriedYears : null,
-                has_children: p.hasChildren || '',
-                children_count: p.childrenCount ? +p.childrenCount : null,
-                delivery_type: p.deliveryType || '',
-                husband_age: p.husbandAge ? +p.husbandAge : null,
-                husband_smoker: p.husbandSmoker || '',
-                husband_diseased: p.husbandDiseased || '',
-                husband_disease_text: p.husbandDiseaseText || '',
-                og_history: p.ogHistory || {}
-            };
-            if (store === 'visits') return { id: p.id, patient_id: p.patientId, date: p.date || null, time: p.time || null,
-                visit_purpose: p.visitPurpose || '', visit_type: p.visitType || '', notes: p.notes || '', ts: p.ts ||
-                    Date.now() };
-            if (store === 'prescriptions') return { id: p.id, patient_id: p.patientId, patient_name: p.patientName,
-                patient_age: p.patientAge ? +p.patientAge : null, diagnosis: p.diagnosis || '', meds: p.meds || [],
-                labs: p.labs || [], date: p.date || null, ts: p.ts || Date.now() };
-            if (store === 'labResults') return { id: p.id, patient_id: p.patientId, test_name: p.testName || '',
-                result: p.result || '', notes: p.notes || '', date: p.date || null, ts: p.ts || Date.now() };
-            if (store === 'attachments') return { id: p.id, patient_id: p.patientId, path: p.path || '', url: p.url || '',
-                name: p.name || '', ts: p.ts || Date.now() };
-            if (store === 'chat') return { id: p.id, from_id: p.from, from_name: p.fromName, to_id: p.to, to_name: p
-                    .toName, text: p.text, ts: p.ts || Date.now() };
-            if (store === 'staffProfiles') return { id: p.id, username: p.username, blocked: !!p.blocked, created_at: p
-                    .createdAt || Date.now() };
-            if (store === 'medicalFiles') return { id: p.id, patient_id: p.patientId, comment: p.comment || '',
-                timestamp: p.timestamp || Date.now(), data: p.data || {} };
-            return p;
-        }
+       function fromRow(store, r) {
+    if (store === 'patients') return {
+        id: r.id,
+        name: r.name,
+        age: r.age,
+        husbandName: r.husband_name,
+        husbandJob: r.husband_job,
+        phone: r.phone,
+        visitPurpose: r.visit_purpose,
+        visitType: r.visit_type,
+        sourceCategory: r.source_category || '',
+        sourceSocial: r.source_social || '',
+        sourceFriendName: r.source_friend_name || '',
+        sourceDoctorName: r.source_doctor_name || '',
+        sourceStreetDetails: r.source_street_details || '',
+        sourceOther: r.source_other || '',
+        date: r.date,
+        time: r.time ? r.time.slice(0, 5) : '',
+        status: r.status,
+        notes: r.notes,
+        history: r.history || { checked: [], notes: '' },
+        chronic: r.chronic || { checked: [], notes: '' },
+        createdAt: r.created_at,
+        calledAt: r.called_at,
+        maritalStatus: r.marital_status || '',
+        isFirstMarriage: r.is_first_marriage || '',
+        marriedYears: r.married_years,
+        hasChildren: r.has_children || '',
+        childrenCount: r.children_count,
+        deliveryType: r.delivery_type || '',
+        husbandAge: r.husband_age,
+        husbandSmoker: r.husband_smoker || '',
+        husbandDiseased: r.husband_diseased || '',
+        husbandDiseaseText: r.husband_disease_text || '',
+        ogHistory: r.og_history || {},
+        address: r.address || '',
+        husbandFirstMarriage: r.husband_first_marriage || '',
+        husbandOffspring: r.husband_offspring || '',
+        husbandOffspringCount: r.husband_offspring_count || ''
+    };
+    if (store === 'visits') return {
+        id: r.id,
+        patientId: r.patient_id,
+        date: r.date,
+        time: r.time ? r.time.slice(0, 5) : '',
+        visitPurpose: r.visit_purpose,
+        visitType: r.visit_type,
+        notes: r.notes,
+        ts: r.ts
+    };
+    if (store === 'prescriptions') return {
+        id: r.id,
+        patientId: r.patient_id,
+        patientName: r.patient_name,
+        patientAge: r.patient_age,
+        diagnosis: r.diagnosis,
+        meds: r.meds || [],
+        labs: r.labs || [],
+        date: r.date,
+        ts: r.ts
+    };
+    if (store === 'labResults') return {
+        id: r.id,
+        patientId: r.patient_id,
+        testName: r.test_name,
+        result: r.result,
+        notes: r.notes,
+        date: r.date,
+        ts: r.ts
+    };
+    if (store === 'attachments') return {
+        id: r.id,
+        patientId: r.patient_id,
+        path: r.path,
+        url: r.url,
+        name: r.name,
+        ts: r.ts
+    };
+    if (store === 'chat') return {
+        id: r.id,
+        from: r.from_id,
+        fromName: r.from_name,
+        to: r.to_id,
+        toName: r.to_name,
+        text: r.text,
+        ts: r.ts,
+        type: 'pm'
+    };
+    if (store === 'staffProfiles') return {
+        id: r.id,
+        username: r.username,
+        blocked: !!r.blocked,
+        createdAt: r.created_at
+    };
+    return r;
+}
+      function toRow(store, p) {
+    if (store === 'patients') return {
+        id: p.id,
+        name: p.name,
+        age: p.age ? +p.age : null,
+        husband_name: p.husbandName || '',
+        husband_job: p.husbandJob || '',
+        phone: p.phone || '',
+        visit_purpose: p.visitPurpose || '',
+        visit_type: p.visitType || '',
+        source_category: p.sourceCategory || '',
+        source_social: p.sourceSocial || '',
+        source_friend_name: p.sourceFriendName || '',
+        source_doctor_name: p.sourceDoctorName || '',
+        source_street_details: p.sourceStreetDetails || '',
+        source_other: p.sourceOther || '',
+        date: p.date || null,
+        time: p.time || null,
+        status: p.status || 'Waiting',
+        notes: p.notes || '',
+        history: p.history || { checked: [], notes: '' },
+        chronic: p.chronic || { checked: [], notes: '' },
+        created_at: p.createdAt || Date.now(),
+        called_at: p.calledAt || null,
+        marital_status: p.maritalStatus || '',
+        is_first_marriage: p.isFirstMarriage || '',
+        married_years: p.marriedYears ? +p.marriedYears : null,
+        has_children: p.hasChildren || '',
+        children_count: p.childrenCount ? +p.childrenCount : null,
+        delivery_type: p.deliveryType || '',
+        husband_age: p.husbandAge ? +p.husbandAge : null,
+        husband_smoker: p.husbandSmoker || '',
+        husband_diseased: p.husbandDiseased || '',
+        husband_disease_text: p.husbandDiseaseText || '',
+        og_history: p.ogHistory || {},
+        address: p.address || '',
+        husband_first_marriage: p.husbandFirstMarriage || '',
+        husband_offspring: p.husbandOffspring || '',
+        husband_offspring_count: p.husbandOffspringCount ? +p.husbandOffspringCount : null
+    };
+    if (store === 'visits') return {
+        id: p.id,
+        patient_id: p.patientId,
+        date: p.date || null,
+        time: p.time || null,
+        visit_purpose: p.visitPurpose || '',
+        visit_type: p.visitType || '',
+        notes: p.notes || '',
+        ts: p.ts || Date.now()
+    };
+    if (store === 'prescriptions') return {
+        id: p.id,
+        patient_id: p.patientId,
+        patient_name: p.patientName,
+        patient_age: p.patientAge ? +p.patientAge : null,
+        diagnosis: p.diagnosis || '',
+        meds: p.meds || [],
+        labs: p.labs || [],
+        date: p.date || null,
+        ts: p.ts || Date.now()
+    };
+    if (store === 'labResults') return {
+        id: p.id,
+        patient_id: p.patientId,
+        test_name: p.testName || '',
+        result: p.result || '',
+        notes: p.notes || '',
+        date: p.date || null,
+        ts: p.ts || Date.now()
+    };
+    if (store === 'attachments') return {
+        id: p.id,
+        patient_id: p.patientId,
+        path: p.path || '',
+        url: p.url || '',
+        name: p.name || '',
+        ts: p.ts || Date.now()
+    };
+    if (store === 'chat') return {
+        id: p.id,
+        from_id: p.from,
+        from_name: p.fromName,
+        to_id: p.to,
+        to_name: p.toName,
+        text: p.text,
+        ts: p.ts || Date.now()
+    };
+    if (store === 'staffProfiles') return {
+        id: p.id,
+        username: p.username,
+        blocked: !!p.blocked,
+        created_at: p.createdAt || Date.now()
+    };
+    return p;
+}
         const STORE_TABLE = { patients: 'patients', visits: 'visits', prescriptions: 'prescriptions',
             labResults: 'lab_results', attachments: 'attachments', chat: 'chat_messages',
             staffProfiles: 'staff_profiles', medicalFiles: 'medical_files'
@@ -1977,7 +2383,7 @@
             renderAll();
             const { error } = await sb.from(STORE_TABLE[store]).upsert(toRow(store, record));
             if (error) { console.error(error);
-                toast('❌ Failed to save online'); }
+                toast('❌ Failed to save online: ' + (error.message || error.hint || error.code || 'unknown error')); }
         }
 
         async function dbDel(store, id) {
@@ -1985,14 +2391,14 @@
             renderAll();
             const { error } = await sb.from(STORE_TABLE[store]).delete().eq('id', id);
             if (error) { console.error(error);
-                toast('❌ Failed to delete online'); }
+                toast('❌ Failed to delete online: ' + (error.message || error.hint || error.code || 'unknown error')); }
         }
 
         async function saveSetting(key, value) {
             data.settings[key] = value;
             const { error } = await sb.from('settings').upsert({ key, value });
             if (error) { console.error(error);
-                toast('❌ Failed to save setting'); }
+                toast('❌ Failed to save setting: ' + (error.message || error.hint || error.code || 'unknown error')); }
             renderAll();
         }
 
@@ -2048,34 +2454,17 @@
         }
 
         // ===== FIELDS (All English) =====
+        // Reception keeps identity + visit/booking only.
+        // Marital status & husband details now live in the Medical File → Personal Details.
         const FIELDS = [
             { k: 'name', label: 'Patient Name *', type: 'text', ph: 'Enter name...' },
             { k: 'age', label: 'Age *', type: 'number' },
             { k: 'phone', label: 'Phone number', type: 'text', ph: '01xxxxxxxxx' },
             { k: 'address', label: 'Address', type: 'text', ph: 'Full address' },
-            { section: '📋 Personal History' },
-            { k: 'maritalStatus', label: 'Marital Status', type: 'select', opts: ['Virgin', 'Married', 'Divorced',
-                    'Widow'
-                ] },
-            { k: 'isFirstMarriage', label: 'First Marriage?', type: 'select', opts: ['Yes', 'No'], showIf: { field: 'maritalStatus',
-                    equals: 'Married' } },
-            { k: 'marriedYears', label: 'Married for (years)', type: 'number', showIf: { field: 'maritalStatus',
-                    equals: 'Married' } },
-            { k: 'hasChildren', label: 'Has Children?', type: 'select', opts: ['Yes', 'No'], showIf: { field: 'maritalStatus',
-                    equals: 'Married' } },
-            { k: 'childrenCount', label: 'Number of Children', type: 'number', showIf: { field: 'hasChildren',
-                    equals: 'Yes' } },
-            { k: 'deliveryType', label: 'Delivery Type', type: 'select', opts: ['Normal Delivery',
-                    'Cesarean Section (C-Section)'
-                ], showIf: { field: 'hasChildren', equals: 'Yes' } },
-            { section: '🤵 Husband History' },
+            { section: '🤵 Husband Details' },
             { k: 'husbandName', label: 'Husband Name', type: 'text' },
             { k: 'husbandAge', label: 'Husband Age', type: 'number' },
             { k: 'husbandJob', label: 'Husband Job', type: 'text' },
-            { k: 'husbandSmoker', label: 'Husband Smoker?', type: 'select', opts: ['Yes', 'No'] },
-            { k: 'husbandDiseased', label: 'Husband Diseased?', type: 'select', opts: ['Yes', 'No'] },
-            { k: 'husbandDiseaseText', label: 'Husband Disease', type: 'text', showIf: { field: 'husbandDiseased',
-                    equals: 'Yes' } },
             { section: '🗓 Visit Details' },
             { k: 'visitPurpose', label: 'Visit Purpose *', type: 'select', optsKey: 'visitPurposes',
             ph: '-- Select --' },
@@ -2093,9 +2482,17 @@
                     equals: 'Street Banner/Flyer' } },
             { k: 'sourceOther', label: 'Other Details', type: 'text', showIf: { field: 'sourceCategory',
                     equals: 'Other' } },
+            { section: '📅 Booking' },
             { k: 'date', label: 'Appointment Date', type: 'date' },
             { k: 'time', label: 'Appointment Time', type: 'time' },
             { k: 'notes', label: 'Notes', type: 'textarea' }
+        ];
+
+        // Personal / husband fields that are no longer on the reception form but must survive
+        // when a record is copied into a new booking (see quickBookFollowup / savePatientModal).
+        const CARRY_FIELDS = ['maritalStatus', 'isFirstMarriage', 'marriedYears', 'hasChildren', 'childrenCount',
+            'deliveryType', 'husbandName', 'husbandAge', 'husbandJob', 'husbandSmoker', 'husbandDiseased',
+            'husbandDiseaseText', 'husbandFirstMarriage', 'husbandOffspring', 'husbandOffspringCount', 'ogHistory'
         ];
 
         const PREFIX_CONTAINER = { reg: 'regForm', pm: 'pmForm' };
@@ -2149,34 +2546,11 @@
                 const show = cond.notEmpty ? ctrl.value.trim() !== '' : (ctrl.value === cond.equals);
                 div.style.display = show ? '' : 'none';
             });
-            const marital = $(prefix + '_maritalStatus');
-            if (marital) {
-                const isMarried = marital.value === 'Married';
-                ['isFirstMarriage', 'marriedYears', 'hasChildren', 'childrenCount', 'deliveryType'].forEach(k => {
-                    const el = $(prefix + '_' + k);
-                    if (el) {
-                        const parent = el.closest('.field');
-                        if (parent) {
-                            if (k === 'childrenCount' || k === 'deliveryType') {
-                                const hasChildrenCtrl = $(prefix + '_hasChildren');
-                                if (hasChildrenCtrl) {
-                                    parent.style.display = (isMarried && hasChildrenCtrl.value === 'Yes') ? '' :
-                                        'none';
-                                } else {
-                                    parent.style.display = isMarried ? '' : 'none';
-                                }
-                            } else {
-                                parent.style.display = isMarried ? '' : 'none';
-                            }
-                        }
-                    }
-                });
-            }
         }
 
         function updateRegPriceHint() {
-            const t = $('reg_visitType').value;
-            const price = t === 'New' ? num(data.settings.examPrice) : (t === 'Follow-up' ? num(data.settings
+            const k = vtKind($('reg_visitType').value);
+            const price = k === 'new' ? num(data.settings.examPrice) : (k === 'followup' ? num(data.settings
                 .followupPrice) : null);
             $('regPriceHint').textContent = price !== null ? `💰 Expected price: ${price} EGP` : '';
         }
@@ -2260,18 +2634,9 @@
                 age: p.age,
                 phone: p.phone,
                 address: p.address,
-                maritalStatus: p.maritalStatus,
-                isFirstMarriage: p.isFirstMarriage,
-                marriedYears: p.marriedYears,
-                hasChildren: p.hasChildren,
-                childrenCount: p.childrenCount,
-                deliveryType: p.deliveryType,
                 husbandName: p.husbandName,
                 husbandAge: p.husbandAge,
                 husbandJob: p.husbandJob,
-                husbandSmoker: p.husbandSmoker,
-                husbandDiseased: p.husbandDiseased,
-                husbandDiseaseText: p.husbandDiseaseText,
                 sourceCategory: p.sourceCategory,
                 sourceSocial: p.sourceSocial,
                 sourceFriendName: p.sourceFriendName,
@@ -2279,7 +2644,7 @@
                 sourceStreetDetails: p.sourceStreetDetails,
                 sourceOther: p.sourceOther,
                 visitPurpose: p.visitPurpose,
-                visitType: 'Follow-up',
+                visitType: VT_FOLLOWUP_VALUE,
                 date: todayStr(),
                 time: nowTime()
             });
@@ -2314,8 +2679,7 @@
                     return;
                 }
             }
-            dbPut('patients', { id: uid(), ...v, status: 'Waiting', createdAt: Date.now(), history: { checked: [],
-                    notes: '' }, chronic: { checked: [], notes: '' } });
+            dbPut('patients', { id: uid(), ...v, status: 'Waiting', createdAt: Date.now(), ogHistory: {} });
             toast('✅ Registered');
             resetForm('reg');
             clearLink();
@@ -2342,7 +2706,7 @@
             box.innerHTML = list.map((p, i) =>
                 `<div class="queue-item ${p.status==='Called'?'called':''}">
                     <div class="ord">${i+1}</div>
-                    <div style="flex:1;min-width:150px"><b>${esc(p.name)}</b> <span class="chip ${p.visitType==='New'?'exam':'followup'}">${esc(p.visitType)}</span>
+                    <div style="flex:1;min-width:150px"><b>${esc(p.name)}</b> <span class="chip ${isNewVisit(p.visitType)?'exam':'followup'}">${esc(p.visitType)}</span>
                         <div style="font-size:12px;color:#94a3b8">🎯 ${esc(p.visitPurpose)} — ⏰ ${p.time?fmtTime(p.time):''}</div></div>
                     <span class="chip ${p.status==='Called'?'call':'wait'}">${esc(p.status)}</span>
                     <button class="btn sm gray" onclick="openPatientFile('${p.id}')">📁</button>
@@ -2419,13 +2783,19 @@
             document.querySelectorAll('.appt-fbtn').forEach(b => b.classList.remove('active'));
             renderAppointments(); }
 
-        let editingId = null;
+        let editingId = null,
+            pmCarry = {};
 
         function openPatientModal(id, defaults) {
             editingId = id || null;
+            pmCarry = {};
             if (id) { const p = data.patients.find(x => x.id === id); if (!p) return;
                 $('pmTitle').textContent = '✏️ Edit: ' + p.name;
                 setForm('pm', p); } else { $('pmTitle').textContent = '➕ New Booking';
+                // Personal / husband details are not on this form any more — carry them across
+                // so a follow-up booking keeps the file it was created from.
+                if (defaults) CARRY_FIELDS.forEach(k => { if (defaults[k] !== undefined && defaults[k] !== null &&
+                        defaults[k] !== '') pmCarry[k] = defaults[k]; });
                 resetForm('pm', defaults || {}); }
             openModal('patientModal');
         }
@@ -2434,13 +2804,13 @@
             const v = getForm('pm');
             if (!v.name || !v.age || !v.visitPurpose || !v.visitType) { toast('⚠ Complete all required fields'); return; }
             let p = editingId ? { ...(data.patients.find(x => x.id === editingId) || { id: editingId, createdAt: Date
-                        .now(), status: 'Waiting', history: { checked: [], notes: '' }, chronic: { checked: [],
-                        notes: '' } }), ...v } : { id: uid(), ...v, status: 'Waiting', createdAt: Date.now(),
-                history: { checked: [], notes: '' }, chronic: { checked: [], notes: '' } };
+                        .now(), status: 'Waiting' }), ...v } : { id: uid(), ...pmCarry, ...v, status: 'Waiting',
+                createdAt: Date.now() };
             dbPut('patients', p);
             closeModal('patientModal');
             toast('✅ Saved');
             editingId = null;
+            pmCarry = {};
         }
 
         let patSearch = '',
@@ -2459,10 +2829,18 @@
             return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         }
 
+        function visitTypeOptions() {
+            const spec = FIELDS.find(f => f.k === 'visitType');
+            const s = new Set(spec && spec.opts ? spec.opts : []);
+            data.patients.forEach(p => { if (p.visitType) s.add(p.visitType); });
+            (data.visits || []).forEach(v => { if (v.visitType) s.add(v.visitType); });
+            return [...s];
+        }
+
         function renderPatients() {
             $('patPurpose').innerHTML = '<option value="">All purposes</option>' + (data.settings.visitPurposes || []).map(
                 x => `<option ${x===patPurpose?'selected':''}>${esc(x)}</option>`).join('');
-            $('patType').innerHTML = '<option value="">All types</option>' + ['New', 'Follow-up'].map(x =>
+            $('patType').innerHTML = '<option value="">All types</option>' + visitTypeOptions().map(x =>
                 `<option ${x===patType?'selected':''}>${esc(x)}</option>`).join('');
             $('patScopeLbl').textContent = patDateVal ? ('Patients on ' + fmtDate(patDateVal)) : (patShowAll ?
                 'All records' : "Today's cases");
@@ -2470,7 +2848,7 @@
             $('patBody').innerHTML = list.length ? list.map((p, i) => `<tr>
                         <td>${i+1}</td><td><b style="cursor:pointer;color:#be185d" onclick="openPatientFile('${p.id}')">${esc(p.name)}</b></td>
                         <td>${esc(p.age)}</td><td>${esc(p.visitPurpose||'—')}</td>
-                        <td><span class="chip ${p.visitType==='New'?'exam':'followup'}">${esc(p.visitType||'—')}</span></td>
+                        <td><span class="chip ${isNewVisit(p.visitType)?'exam':'followup'}">${esc(p.visitType||'—')}</span></td>
                         <td><span class="chip ${p.status==='Done'?'done':(p.status==='Called'?'call':'wait')}">${esc(p.status||'—')}</span></td>
                         <td>${esc(p.date||'—')}</td>
                         <td><button class="btn sm gray" onclick="openPatientFile('${p.id}')">📁</button> <button class="btn sm blue" onclick="openPatientModal('${p.id}')">✏️</button> <button class="btn sm red" onclick="delPatient('${p.id}')">🗑</button></td></tr>`
@@ -2489,10 +2867,11 @@
 
        function exportExcel() {
 const rows = [
-['#', 'Name', 'Age', 'Status', 'First Marriage', 'Married Years', 'Children', 'Count',
-'Delivery Type', 'Husband', 'His Age', 'His Job', 'Smoker?', 'Diseased?', 'Disease',
-'Purpose', 'Type', 'Source', 'Details', 'Date', 'Time', 'Status', 'Medical History',
-'Chronic Conditions', 'Notes'
+['#', 'Name', 'Age', 'Phone', 'Address', 'Marital Status', 'First Marriage', 'Offspring', 'Offspring Count',
+'Husband', 'His Age', 'His Job', 'Smoker?', 'Diseased?', 'Disease',
+'His First Marriage', 'His Offspring', 'His Offspring Count',
+'Purpose', 'Type', 'Source', 'Details', 'Date', 'Time', 'Status',
+'Past Medical', 'Past Surgical', 'Impression', 'Notes'
 ]
 ];
 filteredPatients().forEach((p, i) => {
@@ -2500,12 +2879,15 @@ let src = p.sourceCategory || '';
 if (p.sourceCategory === 'Social Media') src += ' (' + (p.sourceSocial || '') + ')';
 else if (p.sourceCategory === 'Friend') src += ': ' + (p.sourceFriendName || '');
 else if (p.sourceCategory === 'Doctor Recommendation') src += ': Dr. ' + (p.sourceDoctorName || '');
-rows.push([i + 1, p.name, p.age, p.maritalStatus, p.isFirstMarriage, p.marriedYears, p
-.hasChildren, p.childrenCount, p.deliveryType, p.husbandName, p.husbandAge, p
-.husbandJob, p.husbandSmoker, p.husbandDiseased, p.husbandDiseaseText, p
-.visitPurpose, p.visitType, p.sourceCategory, src, p.date, p.time, p.status, (p
-.history && p.history.checked || []).join('; '), (p.chronic && p.chronic
-.checked || []).join('; '), p.notes
+else if (p.sourceCategory === 'Street Banner/Flyer') src += ': ' + (p.sourceStreetDetails || '');
+else if (p.sourceCategory === 'Other') src += ': ' + (p.sourceOther || '');
+const og = p.ogHistory || {};
+rows.push([i + 1, p.name, p.age, p.phone, p.address, p.maritalStatus, p.isFirstMarriage, p
+.hasChildren, p.childrenCount, p.husbandName, p.husbandAge, p
+.husbandJob, p.husbandSmoker, p.husbandDiseased, p.husbandDiseaseText,
+p.husbandFirstMarriage, p.husbandOffspring, p.husbandOffspringCount, p
+.visitPurpose, p.visitType, p.sourceCategory, src, p.date, p.time, p.status,
+og.pastMedical, og.pastSurgical, og.impression, p.notes
 ]);
 });
 const csv = '\uFEFF' + rows.map(r => r.map(c => `"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\r\n');
@@ -2525,7 +2907,8 @@ toast('📤 Exported');
             openVisitKeys = {};
             $('pfName').textContent = p.name;
             refreshFileInfo();
-            renderHistoryChronic();
+            renderPfIdentity();
+            renderPersonalDetails();
             renderOgHistory();
             renderPfAttachments();
             renderLabRows();
@@ -2545,31 +2928,18 @@ toast('📤 Exported');
                     `<div class="insight">💡 Suggested follow-up date: <b>${fmtDate(suggested)}</b> <button class="btn sm blue" onclick="quickBookFollowup('${p.id}','${suggested}')">📅 Book</button></div>`;
             } else { nb.style.display = 'none';
                 nb.innerHTML = ''; }
-            $('ogBody').style.display = 'none';
-            $('ogToggleIcon').textContent = '▾';
+            collapseAllAcc();
             openModal('fileModal');
         }
 
         function quickBookFollowup(id, dateStr) {
             const p = data.patients.find(x => x.id === id);
             if (!p) return;
-            openPatientModal(null, {
+            const defaults = {
                 name: p.name,
                 age: p.age,
                 phone: p.phone,
                 address: p.address,
-                maritalStatus: p.maritalStatus,
-                isFirstMarriage: p.isFirstMarriage,
-                marriedYears: p.marriedYears,
-                hasChildren: p.hasChildren,
-                childrenCount: p.childrenCount,
-                deliveryType: p.deliveryType,
-                husbandName: p.husbandName,
-                husbandAge: p.husbandAge,
-                husbandJob: p.husbandJob,
-                husbandSmoker: p.husbandSmoker,
-                husbandDiseased: p.husbandDiseased,
-                husbandDiseaseText: p.husbandDiseaseText,
                 sourceCategory: p.sourceCategory,
                 sourceSocial: p.sourceSocial,
                 sourceFriendName: p.sourceFriendName,
@@ -2577,21 +2947,48 @@ toast('📤 Exported');
                 sourceStreetDetails: p.sourceStreetDetails,
                 sourceOther: p.sourceOther,
                 visitPurpose: p.visitPurpose,
-                visitType: 'Follow-up',
+                visitType: VT_FOLLOWUP_VALUE,
                 date: dateStr,
                 time: ''
-            });
+            };
+            CARRY_FIELDS.forEach(k => { defaults[k] = p[k]; });
+            openPatientModal(null, defaults);
+        }
+
+        // Human-readable marital summary shared by the file header, the printout and saved-file view.
+        function maritalSummary(p) {
+            p = p || {};
+            let s = p.maritalStatus || 'N/A';
+            if (p.isFirstMarriage) s += ` | First marriage: ${p.isFirstMarriage}`;
+            if (p.isFirstMarriage === 'No') {
+                s += ` | Offspring: ${p.hasChildren || 'N/A'}`;
+                if (p.hasChildren === 'Yes') s += ` (${p.childrenCount || '0'})`;
+            }
+            return s;
+        }
+
+        function husbandSummary(p) {
+            p = p || {};
+            const bits = [];
+            const husbandFirstMarriage = p.husbandFirstMarriage || p.husband_first_marriage || '';
+            const husbandOffspring = p.husbandOffspring || p.husband_offspring || '';
+            const husbandOffspringCount = p.husbandOffspringCount || p.husband_offspring_count || '';
+
+            if (p.husbandName) bits.push(p.husbandName);
+            if (p.husbandAge) bits.push('Age: ' + p.husbandAge);
+            if (p.husbandJob) bits.push(p.husbandJob);
+            if (p.husbandSmoker) bits.push('Smoker: ' + p.husbandSmoker);
+            if (p.husbandDiseased) bits.push('Diseased: ' + p.husbandDiseased + (p.husbandDiseased === 'Yes' && p
+                .husbandDiseaseText ? ' (' + p.husbandDiseaseText + ')' : ''));
+            if (husbandFirstMarriage) bits.push('First Marriage?: ' + husbandFirstMarriage);
+            if (husbandFirstMarriage === 'No') bits.push('Offspring: ' + (husbandOffspring || 'N/A') + (husbandOffspring === 'Yes' ? ' (' + (husbandOffspringCount || '0') + ')' : ''));
+            return bits.length ? bits.join(' | ') : 'N/A';
         }
 
         function refreshFileInfo() {
             if (!filePatient) return;
             const p = filePatient;
-            let maritalInfo = esc(p.maritalStatus || '?');
-            if (p.maritalStatus === 'Married') {
-                maritalInfo += ` | First: ${p.isFirstMarriage || 'N/A'} | Years: ${p.marriedYears || '?'}`;
-                maritalInfo += ` | Children: ${p.hasChildren || 'N/A'}`;
-                if (p.hasChildren === 'Yes') maritalInfo += ` (${p.childrenCount || '0'}, ${p.deliveryType || 'N/A'})`;
-            }
+            const maritalInfo = esc(maritalSummary(p));
             let sourceInfo = p.sourceCategory || '?';
             if (p.sourceCategory === 'Social Media') sourceInfo += ' (' + (p.sourceSocial || '') + ')';
             else if (p.sourceCategory === 'Friend') sourceInfo += ': ' + (p.sourceFriendName || '');
@@ -2600,55 +2997,98 @@ toast('📤 Exported');
                 `Age: <b>${esc(p.age||'?')}</b> | Status: <b>${maritalInfo}</b> | Source: <b>${esc(sourceInfo)}</b> | Husband: <b>${esc(p.husbandName||'—')}</b> | Prescriptions: <b>${data.prescriptions.filter(r=>r.patientId===p.id).length}</b>`;
         }
 
-        function renderHistoryChronic() {
-            if (!filePatient) return;
-            const p = filePatient;
-            const hist = p.history || { checked: [], notes: '' },
-                chr = p.chronic || { checked: [], notes: '' };
-            paintCheckGrid('pfHistoryGrid', data.settings.historyOptions || [], hist.checked || []);
-            paintCheckGrid('pfChronicGrid', data.settings.chronicOptions || [], chr.checked || []);
-            $('pfHistoryNotes').value = hist.notes || '';
-            $('pfChronicNotes').value = chr.notes || '';
+        // ===== ACCORDIONS =====
+        function toggleAcc(id) {
+            const body = $(id);
+            if (!body) return;
+            const open = body.style.display !== 'none';
+            body.style.display = open ? 'none' : 'block';
+            const ic = $('ic-' + id);
+            if (ic) ic.textContent = open ? '▾' : '▴';
         }
 
-        function paintCheckGrid(containerId, options, checked) {
-            $(containerId).innerHTML = options.map(opt => {
-                const on = checked.includes(opt);
-                return `<label class="check-item ${on?'checked':''}"><input type="checkbox" value="${esc(opt)}" ${on?'checked':''} onchange="this.parentElement.classList.toggle('checked',this.checked)">${esc(opt)}</label>`;
-            }).join('') || '<div style="color:#94a3b8;font-size:13px">No items</div>';
+        function collapseAcc(id) {
+            const body = $(id);
+            if (!body) return;
+            body.style.display = 'none';
+            const ic = $('ic-' + id);
+            if (ic) ic.textContent = '▾';
         }
 
-        $('pfHistoryNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault();
-                addCheckOption('historyOptions', 'pfHistoryGrid', $('pfHistoryNew')); } });
-        $('pfChronicNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault();
-                addCheckOption('chronicOptions', 'pfChronicGrid', $('pfChronicNew')); } });
-
-        async function addCheckOption(settingKey, gridId, input) {
-            const v = input.value.trim();
-            if (!v) return;
-            const opts = data.settings[settingKey] || [];
-            if (!opts.includes(v)) { opts.push(v);
-                await saveSetting(settingKey, opts); }
-            input.value = '';
-            paintCheckGrid(gridId, data.settings[settingKey] || [], [...(gridId === 'pfHistoryGrid' ? getCheckedFrom(
-                'pfHistoryGrid') : getCheckedFrom('pfChronicGrid')), v]);
+        function collapseAllAcc() {
+            document.querySelectorAll('#fileModal .acc-body').forEach(b => { if (b.id) collapseAcc(b.id); });
         }
+
+        // Show/hide a conditional wrapper (used by the yes/no + checkbox reveals).
+        function toggleWrap(id, on) { const el = $(id); if (el) el.style.display = on ? 'block' : 'none'; }
 
         function getCheckedFrom(containerId) { return [...document.querySelectorAll('#' + containerId +
                 ' input:checked')].map(i => i.value); }
 
-        function savePfMed() {
+        // ===== PERSONAL DETAILS (moved here from the reception page) =====
+        const PD_FIELDS = ['maritalStatus', 'isFirstMarriage', 'hasChildren', 'childrenCount', 'husbandName',
+            'husbandAge', 'husbandJob', 'husbandSmoker', 'husbandDiseased', 'husbandDiseaseText',
+            'husbandFirstMarriage', 'husbandOffspring', 'husbandOffspringCount'
+        ];
+
+        function renderPfIdentity() {
             if (!filePatient) return;
-            const history = { checked: getCheckedFrom('pfHistoryGrid'), notes: $('pfHistoryNotes').value.trim() };
-            const chronic = { checked: getCheckedFrom('pfChronicGrid'), notes: $('pfChronicNotes').value.trim() };
-            dbPut('patients', { ...filePatient, history, chronic });
-            filePatient = { ...filePatient, history, chronic };
-            toast('✅ Medical history saved');
+            const p = filePatient;
+            $('pfIdentity').innerHTML =
+                `<div>Name: <b>${esc(p.name||'—')}</b></div>` +
+                `<div>Age: <b>${esc(p.age||'—')}</b></div>` +
+                `<div>Phone: <b>${esc(p.phone||'—')}</b></div>` +
+                `<div>Address: <b>${esc(p.address||'—')}</b></div>` +
+                `<div>Visit Purpose: <b>${esc(p.visitPurpose||'—')}</b></div>` +
+                `<div>Visit Type: <b>${esc(p.visitType||'—')}</b></div>`;
         }
 
-        function toggleOgSection() { const body = $('ogBody'); const open = body.style.display !== 'none';
-            body.style.display = open ? 'none' : 'block';
-            $('ogToggleIcon').textContent = open ? '▾' : '▴'; }
+        function renderPersonalDetails() {
+            if (!filePatient) return;
+            const p = filePatient;
+            PD_FIELDS.forEach(k => { const el = $('pd_' + k); if (el) el.value = p[k] ?? ''; });
+            applyPdConditionals();
+        }
+
+        function applyPdConditionals() {
+            // Wife: First marriage = No  →  Offspring;  Offspring = Yes  →  count
+            const notFirst = $('pd_isFirstMarriage').value === 'No';
+            toggleWrap('pd_offspringWrap', notFirst);
+            toggleWrap('pd_offspringCountWrap', notFirst && $('pd_hasChildren').value === 'Yes');
+            // Husband: diseased = Yes → diseases text
+            toggleWrap('pd_husbandDiseaseWrap', $('pd_husbandDiseased').value === 'Yes');
+            // Husband: First marriage = No → Offspring; Offspring = Yes → count
+            const hNotFirst = $('pd_husbandFirstMarriage').value === 'No';
+            toggleWrap('pd_husbandOffspringWrap', hNotFirst);
+            toggleWrap('pd_husbandOffspringCountWrap', hNotFirst && $('pd_husbandOffspring').value === 'Yes');
+        }
+
+        function bindPdBehaviors() {
+            ['pd_isFirstMarriage', 'pd_hasChildren', 'pd_husbandDiseased', 'pd_husbandFirstMarriage',
+                'pd_husbandOffspring'
+            ].forEach(id => { const el = $(id); if (el) el.addEventListener('change', applyPdConditionals); });
+            enableBulletList($('pd_husbandDiseaseText'));
+        }
+
+        function savePersonalDetails() {
+            if (!filePatient) return;
+            const patch = {};
+            PD_FIELDS.forEach(k => { const el = $('pd_' + k);
+                patch[k] = el ? el.value.trim() : ''; });
+            // Clear values whose parent answer hides them, so stale data is never saved.
+            if (patch.isFirstMarriage !== 'No') { patch.hasChildren = '';
+                patch.childrenCount = ''; } else if (patch.hasChildren !== 'Yes') patch.childrenCount = '';
+            if (patch.husbandDiseased !== 'Yes') patch.husbandDiseaseText = '';
+            if (patch.husbandFirstMarriage !== 'No') { patch.husbandOffspring = '';
+                patch.husbandOffspringCount = ''; } else if (patch.husbandOffspring !== 'Yes') patch
+                .husbandOffspringCount = '';
+            dbPut('patients', { ...filePatient, ...patch });
+            filePatient = { ...filePatient, ...patch };
+            renderPfIdentity();
+            refreshFileInfo();
+            renderPersonalDetails();
+            toast('✅ Personal details saved');
+        }
 
 function enableBulletList(el) {
     if (!el || el._bulletBound) return;
@@ -2672,54 +3112,138 @@ function enableBulletList(el) {
         function bindOgBehaviors() {
             [
                 'og_uterus', 'og_rtAdnexa', 'og_ltAdnexa', 'og_pelvis', 'og_examOther', 'og_impression',
-                'og_mgmtLabs', 'og_mgmtVitamins', 'og_mgmtPlan'
+                'og_mgmtLabs', 'og_mgmtVitamins', 'og_mgmtPlan', 'og_obstetricNotes', 'og_pastMedical',
+                'og_pastSurgical', 'og_laparoscope', 'og_hystroscope', 'og_icsi', 'og_contraceptive',
+                'og_complaint', 'og_presentHistory', 'og_hsgReason', 'og_ussFindings'
             ].forEach(id => enableBulletList($(id)));
             $('og_examMethod').addEventListener('change', () => { $('og_examFields').style.display = $(
                     'og_examMethod').value ? 'block' : 'none'; });
+            $('og_hsg').addEventListener('change', () => toggleWrap('og_hsgReasonWrap', $('og_hsg').value ===
+                'Abnormal'));
+            $('og_uss').addEventListener('change', () => toggleWrap('og_ussTypeWrap', $('og_uss').value === 'Yes'));
         }
 
         function ogDefaults() {
             return {
                 menstrual: { regularity: '', cycleDays: '', durationDays: '' },
-                obstetric: '',
+                obstetric: { deliveries: '', normalOn: false, normalCount: '', csOn: false, csCount: '', notes: '' },
                 pastMedical: '',
                 pastSurgical: '',
-                infertility: { laparoscope: '', hystroscope: '', icsi: '' },
+                infertility: { laparoscopeOn: false, laparoscope: '', hystroscopeOn: false, hystroscope: '',
+                    icsiOn: false, icsi: '' },
                 contraceptive: '',
                 complaint: '',
                 presentHistory: '',
-                investigations: { labs: '', hsg: '', semen: '', uss3d: '' },
+                investigations: {
+                    hsg: '',
+                    hsgReason: '',
+                    uss: '',
+                    ussType: '',
+                    ussFindings: '',
+                    semenOn: false,
+                    semen: { date: '', labName: '', volume: '', count: '', progressive: '', normal: '' },
+                    legacy: ''
+                },
                 examination: { method: '', uterus: '', rtAdnexa: '', ltAdnexa: '', pelvis: '', other: '' },
                 impression: '',
                 management: { weightReduction: '', labs: '', vitamins: '', treatmentPlan: '' }
             };
         }
 
-        function renderOgHistory() {
-            if (!filePatient) return;
-            const d = ogDefaults();
-            const og = { ...d, ...(filePatient.ogHistory || {}) };
-            og.menstrual = { ...d.menstrual, ...(og.menstrual || {}) };
+        // Older records stored obstetric / investigations as plain strings. Fold them into the
+        // new shapes so nothing that was already typed in is lost.
+        function migrateOg(og, d) {
+            if (typeof og.obstetric === 'string') og.obstetric = { ...d.obstetric, notes: og.obstetric };
+            else og.obstetric = { ...d.obstetric, ...(og.obstetric || {}) };
+
+            const inv = { ...d.investigations, ...(og.investigations || {}) };
+            const legacyBits = [];
+            if (inv.labs) legacyBits.push('Labs: ' + inv.labs);
+            if (typeof inv.semen === 'string' && inv.semen) legacyBits.push('Semen: ' + inv.semen);
+            if (inv.uss3d) legacyBits.push('USS/3D: ' + inv.uss3d);
+            if (inv.hsg && inv.hsg !== 'Normal' && inv.hsg !== 'Abnormal') { legacyBits.push('HSG: ' + inv.hsg);
+                inv.hsg = ''; }
+            if (legacyBits.length) inv.legacy = [inv.legacy, ...legacyBits].filter(Boolean).join('\n');
+            delete inv.labs;
+            delete inv.uss3d;
+            if (typeof inv.semen === 'string') inv.semen = { ...d.investigations.semen };
+            else inv.semen = { ...d.investigations.semen, ...(inv.semen || {}) };
+            og.investigations = inv;
+
             og.infertility = { ...d.infertility, ...(og.infertility || {}) };
-            og.investigations = { ...d.investigations, ...(og.investigations || {}) };
+            // Legacy records had text but no on/off flag — treat non-empty text as selected.
+            if (og.infertility.laparoscope && og.infertility.laparoscopeOn === undefined) og.infertility
+                .laparoscopeOn = true;
+            if (og.infertility.hystroscope && og.infertility.hystroscopeOn === undefined) og.infertility
+                .hystroscopeOn = true;
+            if (og.infertility.icsi && og.infertility.icsiOn === undefined) og.infertility.icsiOn = true;
+            og.infertility.laparoscopeOn = !!og.infertility.laparoscopeOn || !!og.infertility.laparoscope;
+            og.infertility.hystroscopeOn = !!og.infertility.hystroscopeOn || !!og.infertility.hystroscope;
+            og.infertility.icsiOn = !!og.infertility.icsiOn || !!og.infertility.icsi;
+            return og;
+        }
+
+        function normalizedOg(patient) {
+            const d = ogDefaults();
+            const og = { ...d, ...((patient && patient.ogHistory) || {}) };
+            og.menstrual = { ...d.menstrual, ...(og.menstrual || {}) };
             og.examination = { ...d.examination, ...(og.examination || {}) };
             og.management = { ...d.management, ...(og.management || {}) };
+            return migrateOg(og, d);
+        }
+
+        function renderOgHistory() {
+            if (!filePatient) return;
+            const og = normalizedOg(filePatient);
             $('og_menstrualRegularity').value = og.menstrual.regularity || '';
             $('og_cycleDays').value = og.menstrual.cycleDays || '';
             $('og_durationDays').value = og.menstrual.durationDays || '';
-            $('og_obstetric').value = og.obstetric || '';
+
+            $('og_deliveriesCount').value = og.obstetric.deliveries || '';
+            $('og_delNormalOn').checked = !!og.obstetric.normalOn;
+            $('og_delNormalCount').value = og.obstetric.normalCount || '';
+            toggleWrap('og_delNormalWrap', !!og.obstetric.normalOn);
+            $('og_delCsOn').checked = !!og.obstetric.csOn;
+            $('og_delCsCount').value = og.obstetric.csCount || '';
+            toggleWrap('og_delCsWrap', !!og.obstetric.csOn);
+            $('og_obstetricNotes').value = og.obstetric.notes || '';
+
             $('og_pastMedical').value = og.pastMedical || '';
             $('og_pastSurgical').value = og.pastSurgical || '';
+
+            $('og_lapOn').checked = !!og.infertility.laparoscopeOn;
             $('og_laparoscope').value = og.infertility.laparoscope || '';
+            toggleWrap('og_lapWrap', !!og.infertility.laparoscopeOn);
+            $('og_hysOn').checked = !!og.infertility.hystroscopeOn;
             $('og_hystroscope').value = og.infertility.hystroscope || '';
+            toggleWrap('og_hysWrap', !!og.infertility.hystroscopeOn);
+            $('og_icsiOn').checked = !!og.infertility.icsiOn;
             $('og_icsi').value = og.infertility.icsi || '';
+            toggleWrap('og_icsiWrap', !!og.infertility.icsiOn);
+
             $('og_contraceptive').value = og.contraceptive || '';
             $('og_complaint').value = og.complaint || '';
             $('og_presentHistory').value = og.presentHistory || '';
-            $('og_invLabs').value = og.investigations.labs || '';
-            $('og_hsg').value = og.investigations.hsg || '';
-            $('og_semen').value = og.investigations.semen || '';
-            $('og_uss3d').value = og.investigations.uss3d || '';
+
+            const inv = og.investigations;
+            $('og_hsg').value = inv.hsg || '';
+            $('og_hsgReason').value = inv.hsgReason || '';
+            toggleWrap('og_hsgReasonWrap', inv.hsg === 'Abnormal');
+            $('og_uss').value = inv.uss || '';
+            $('og_ussType').value = inv.ussType || '';
+            $('og_ussFindings').value = inv.ussFindings || '';
+            toggleWrap('og_ussTypeWrap', inv.uss === 'Yes');
+            $('og_semenOn').checked = !!inv.semenOn;
+            toggleWrap('og_semenWrap', !!inv.semenOn);
+            $('og_semenDate').value = inv.semen.date || '';
+            $('og_semenLab').value = inv.semen.labName || '';
+            $('og_semenVolume').value = inv.semen.volume || '';
+            $('og_semenCount').value = inv.semen.count || '';
+            $('og_semenPr').value = inv.semen.progressive || '';
+            $('og_semenNormal').value = inv.semen.normal || '';
+            $('og_invLegacy').value = inv.legacy || '';
+            toggleWrap('og_invLegacyWrap', !!inv.legacy);
+
             $('og_examMethod').value = og.examination.method || '';
             $('og_examFields').style.display = og.examination.method ? 'block' : 'none';
             $('og_uterus').value = og.examination.uterus || '';
@@ -2732,6 +3256,7 @@ function enableBulletList(el) {
             $('og_mgmtLabs').value = og.management.labs || '';
             $('og_mgmtVitamins').value = og.management.vitamins || '';
             $('og_mgmtPlan').value = og.management.treatmentPlan || '';
+
         }
 
         function saveOgHistory() {
@@ -2739,16 +3264,44 @@ function enableBulletList(el) {
             const ogHistory = {
                 menstrual: { regularity: $('og_menstrualRegularity').value, cycleDays: $('og_cycleDays').value
                         .trim(), durationDays: $('og_durationDays').value.trim() },
-                obstetric: $('og_obstetric').value.trim(),
+                obstetric: {
+                    deliveries: $('og_deliveriesCount').value.trim(),
+                    normalOn: $('og_delNormalOn').checked,
+                    normalCount: $('og_delNormalOn').checked ? $('og_delNormalCount').value.trim() : '',
+                    csOn: $('og_delCsOn').checked,
+                    csCount: $('og_delCsOn').checked ? $('og_delCsCount').value.trim() : '',
+                    notes: $('og_obstetricNotes').value.trim()
+                },
                 pastMedical: $('og_pastMedical').value.trim(),
                 pastSurgical: $('og_pastSurgical').value.trim(),
-                infertility: { laparoscope: $('og_laparoscope').value.trim(), hystroscope: $('og_hystroscope')
-                        .value.trim(), icsi: $('og_icsi').value.trim() },
+                infertility: {
+                    laparoscopeOn: $('og_lapOn').checked,
+                    laparoscope: $('og_lapOn').checked ? $('og_laparoscope').value.trim() : '',
+                    hystroscopeOn: $('og_hysOn').checked,
+                    hystroscope: $('og_hysOn').checked ? $('og_hystroscope').value.trim() : '',
+                    icsiOn: $('og_icsiOn').checked,
+                    icsi: $('og_icsiOn').checked ? $('og_icsi').value.trim() : ''
+                },
                 contraceptive: $('og_contraceptive').value.trim(),
                 complaint: $('og_complaint').value.trim(),
                 presentHistory: $('og_presentHistory').value.trim(),
-                investigations: { labs: $('og_invLabs').value.trim(), hsg: $('og_hsg').value.trim(),
-                    semen: $('og_semen').value.trim(), uss3d: $('og_uss3d').value.trim() },
+                investigations: {
+                    hsg: $('og_hsg').value,
+                    hsgReason: $('og_hsg').value === 'Abnormal' ? $('og_hsgReason').value.trim() : '',
+                    uss: $('og_uss').value,
+                    ussType: $('og_uss').value === 'Yes' ? $('og_ussType').value : '',
+                    ussFindings: $('og_uss').value === 'Yes' ? $('og_ussFindings').value.trim() : '',
+                    semenOn: $('og_semenOn').checked,
+                    semen: $('og_semenOn').checked ? {
+                        date: $('og_semenDate').value,
+                        labName: $('og_semenLab').value.trim(),
+                        volume: $('og_semenVolume').value.trim(),
+                        count: $('og_semenCount').value.trim(),
+                        progressive: $('og_semenPr').value.trim(),
+                        normal: $('og_semenNormal').value.trim()
+                    } : { date: '', labName: '', volume: '', count: '', progressive: '', normal: '' },
+                    legacy: $('og_invLegacy').value.trim()
+                },
                 examination: { method: $('og_examMethod').value, uterus: $('og_uterus').value.trim(),
                     rtAdnexa: $('og_rtAdnexa').value.trim(), ltAdnexa: $('og_ltAdnexa').value.trim(),
                     pelvis: $('og_pelvis').value.trim(), other: $('og_examOther').value.trim() },
@@ -2759,7 +3312,7 @@ function enableBulletList(el) {
             };
             dbPut('patients', { ...filePatient, ogHistory });
             filePatient = { ...filePatient, ogHistory };
-            toast('✅ O&G History saved');
+            toast('✅ History saved');
         }
 
         function renderLabRows() { $('labRows').innerHTML = '';
@@ -2839,9 +3392,9 @@ function enableBulletList(el) {
                                 <span style="margin-left:auto;color:#be185d;font-size:16px">${open?'▴':'▾'}</span>
                             </div>
                             ${open?`<div style="padding:4px 6px">
-                                ${g.rxs.length?g.rxs.map(r=>`<div class="rx-hist-item" onclick="printRxById('${r.id}')" title="Click to open prescription">
+                                ${g.rxs.length?g.rxs.map(r=>`<div class="rx-hist-item" onclick="viewRx('${r.id}')" title="Click to view prescription">
                                     <span>💊 ${r.diagnosis?esc(r.diagnosis):'No diagnosis'} — ${(r.meds||[]).length} med${(r.meds||[]).length!==1?'s':''} ${(r.labs&&r.labs.length)?' + '+r.labs.length+' lab'+(r.labs.length!==1?'s':''):''}</span>
-                                    <span onclick="event.stopPropagation();"><button class="btn sm gray" onclick="loadRxInto('${r.id}')">✏️</button> <button class="btn sm blue" onclick="printRxById('${r.id}')">🖨</button> <button class="btn sm red" onclick="event.stopPropagation();delRxFrom('${r.id}')">🗑</button></span>
+                                    <span onclick="event.stopPropagation();"><button class="btn sm blue" onclick="viewRx('${r.id}')" title="View">👁 View</button> <button class="btn sm gray" onclick="loadRxInto('${r.id}')" title="Edit">✏️</button> <button class="btn sm blue" onclick="printRx('${r.id}')" title="Print">🖨</button> <button class="btn sm red" onclick="event.stopPropagation();delRxFrom('${r.id}')" title="Delete">🗑</button></span>
                                 </div>`).join(''):''}
                                 ${g.labs.length?`<b style="font-size:13px;display:block;margin-top:8px">🧪 Lab Results</b>
                                     <table class="lab-table" style="margin-top:6px"><thead><tr><th>Test</th><th>Result</th><th>Notes</th><th></th></tr></thead><tbody>
@@ -2878,8 +3431,6 @@ function enableBulletList(el) {
             const comment = prompt('Enter a comment for this medical file:', 'Medical file save');
             if (comment === null) return;
             const dataToSave = {
-                history: filePatient.history || { checked: [], notes: '' },
-                chronic: filePatient.chronic || { checked: [], notes: '' },
                 ogHistory: filePatient.ogHistory || {},
                 labs: (data.labResults || []).filter(l => l.patientId === filePatient.id),
                 attachments: (data.attachments || []).filter(a => a.patientId === filePatient.id),
@@ -2900,6 +3451,9 @@ function enableBulletList(el) {
                     husbandSmoker: filePatient.husbandSmoker,
                     husbandDiseased: filePatient.husbandDiseased,
                     husbandDiseaseText: filePatient.husbandDiseaseText,
+                    husbandFirstMarriage: filePatient.husbandFirstMarriage,
+                    husbandOffspring: filePatient.husbandOffspring,
+                    husbandOffspringCount: filePatient.husbandOffspringCount,
                     sourceCategory: filePatient.sourceCategory,
                     sourceSocial: filePatient.sourceSocial,
                     sourceFriendName: filePatient.sourceFriendName,
@@ -2920,10 +3474,25 @@ function enableBulletList(el) {
             const mf = data.medicalFiles.find(x => x.id === id);
             if (!mf) { toast('File not found'); return; }
             const d = mf.data || {};
-            const pInfo = d.patientInfo || {};
-            const history = d.history || { checked: [], notes: '' };
-            const chronic = d.chronic || { checked: [], notes: '' };
-            const og = d.ogHistory || {};
+            const savedPatient = (data.patients || []).find(x => x.id === mf.patientId) || {};
+            const rawPatientInfo = d.patientInfo || {};
+            const pInfo = { ...savedPatient, ...rawPatientInfo };
+
+            // Fallback to the current patient record for older Medical Files
+            // that were saved before the marital/husband fields were included.
+            [
+                'maritalStatus', 'isFirstMarriage', 'marriedYears', 'hasChildren', 'childrenCount',
+                'deliveryType', 'husbandName', 'husbandAge', 'husbandJob', 'husbandSmoker',
+                'husbandDiseased', 'husbandDiseaseText', 'husbandFirstMarriage',
+                'husbandOffspring', 'husbandOffspringCount'
+            ].forEach(k => {
+                if ((pInfo[k] === undefined || pInfo[k] === null || pInfo[k] === '') &&
+                    savedPatient[k] !== undefined && savedPatient[k] !== null && savedPatient[k] !== '') {
+                    pInfo[k] = savedPatient[k];
+                }
+            });
+
+            const og = normalizedOg({ ogHistory: d.ogHistory || {} });
             const labs = d.labs || [];
             const attachments = d.attachments || [];
 
@@ -2933,57 +3502,74 @@ function enableBulletList(el) {
             html += `<div><strong>Age:</strong> ${esc(pInfo.age||'')}</div>`;
             html += `<div><strong>Phone:</strong> ${esc(pInfo.phone||'')}</div>`;
             html += `<div><strong>Address:</strong> ${esc(pInfo.address||'')}</div>`;
-            html += `<div><strong>Marital Status:</strong> ${esc(pInfo.maritalStatus||'')}</div>`;
-            html += `<div><strong>Husband:</strong> ${esc(pInfo.husbandName||'')}</div>`;
-            html += `</div>`;
-
-            // Medical History
-            html += `<div style="margin:12px 0;padding:12px;background:#fdf2f8;border-radius:8px;border:1px solid #f5d0e8">`;
-            html += `<h4 style="color:#7e22ce;margin-bottom:6px">🩺 Medical History</h4>`;
-            html += `<div><strong>Items:</strong> ${(history.checked||[]).length?esc(history.checked.join(', ')):'None'}</div>`;
-            if (history.notes) html += `<div><strong>Notes:</strong> ${esc(history.notes)}</div>`;
-            html += `<h4 style="color:#7e22ce;margin:10px 0 6px">🧬 Chronic Conditions</h4>`;
-            html += `<div><strong>Items:</strong> ${(chronic.checked||[]).length?esc(chronic.checked.join(', ')):'None'}</div>`;
-            if (chronic.notes) html += `<div><strong>Notes:</strong> ${esc(chronic.notes)}</div>`;
+            html += `<div style="grid-column:1/-1"><strong>Marital Status:</strong> ${esc(maritalSummary(pInfo))}</div>`;
+            html += `<div style="grid-column:1/-1"><strong>Married Years:</strong> ${esc(pInfo.marriedYears||'')}</div>`;
+            html += `<div style="grid-column:1/-1"><strong>Delivery Type:</strong> ${esc(pInfo.deliveryType||'')}</div>`;
+            html += `<div style="grid-column:1/-1"><strong>Husband Name:</strong> ${esc(pInfo.husbandName||'')}</div>`;
+            html += `<div><strong>Husband Age:</strong> ${esc(pInfo.husbandAge||'')}</div>`;
+            html += `<div><strong>Husband Job:</strong> ${esc(pInfo.husbandJob||'')}</div>`;
+            html += `<div><strong>Husband Smoker:</strong> ${esc(pInfo.husbandSmoker||'')}</div>`;
+            html += `<div><strong>Husband Diseased:</strong> ${esc(pInfo.husbandDiseased||'')}</div>`;
+            html += `<div style="grid-column:1/-1"><strong>Husband Disease Details:</strong> ${esc(pInfo.husbandDiseaseText||'')}</div>`;
+            html += `<div><strong>Husband First Marriage:</strong> ${esc(pInfo.husbandFirstMarriage||'')}</div>`;
+            html += `<div><strong>Husband Offspring:</strong> ${esc(pInfo.husbandOffspring||'')}</div>`;
+            html += `<div><strong>Husband Offspring Count:</strong> ${esc(pInfo.husbandOffspringCount||'')}</div>`;
+            html += `<div style="grid-column:1/-1"><strong>Husband Marital / Family Status:</strong> ${esc(husbandSummary(pInfo))}</div>`;
             html += `</div>`;
 
             // O&G
+            const semen = og.investigations.semen || {};
+            const delTypes = [];
+            if (og.obstetric.normalOn) delTypes.push('Normal Delivery' + (og.obstetric.normalCount ? ' × ' + og
+                .obstetric.normalCount : ''));
+            if (og.obstetric.csOn) delTypes.push('Cesarean Section' + (og.obstetric.csCount ? ' × ' + og.obstetric
+                .csCount : ''));
             const ogFields = [
-                ['Menstrual Regularity', og.menstrual?.regularity],
-                ['Cycle (days)', og.menstrual?.cycleDays],
-                ['Duration (days)', og.menstrual?.durationDays],
-                ['Obstetric History', og.obstetric],
+                ['Menstrual Regularity', og.menstrual.regularity],
+                ['Cycle (days)', og.menstrual.cycleDays],
+                ['Duration (days)', og.menstrual.durationDays],
+                ['Number of deliveries', og.obstetric.deliveries],
+                ['Type of deliveries', delTypes.join(' | ')],
+                ['Obstetric Notes', og.obstetric.notes],
                 ['Past Medical', og.pastMedical],
                 ['Past Surgical', og.pastSurgical],
-                ['Laparoscope', og.infertility?.laparoscope],
-                ['Hystroscope', og.infertility?.hystroscope],
-                ['ICSI', og.infertility?.icsi],
+                ['Laparoscope', og.infertility.laparoscope],
+                ['Hysteroscope', og.infertility.hystroscope],
+                ['ICSI', og.infertility.icsi],
                 ['Contraceptive History', og.contraceptive],
                 ['Complaint', og.complaint],
                 ['Present History', og.presentHistory],
-                ['Investigations Labs', og.investigations?.labs],
-                ['HSG', og.investigations?.hsg],
-                ['Semen', og.investigations?.semen],
-                ['USS / 3D', og.investigations?.uss3d],
-                ['Examination Method', og.examination?.method],
-                ['Uterus', og.examination?.uterus],
-                ['RT Adnexa', og.examination?.rtAdnexa],
-                ['LT Adnexa', og.examination?.ltAdnexa],
-                ['Pelvis', og.examination?.pelvis],
-                ['Other Exam', og.examination?.other],
+                ['HSG', og.investigations.hsg],
+                ['HSG — reason', og.investigations.hsgReason],
+                ['USS / 3D', og.investigations.uss ? og.investigations.uss + (og.investigations.ussType ? ' — ' + og
+                    .investigations.ussType : '') : ''],
+                ['USS findings', og.investigations.ussFindings],
+                ['Semen — date', og.investigations.semenOn ? semen.date : ''],
+                ['Semen — lab', og.investigations.semenOn ? semen.labName : ''],
+                ['Semen — volume (ml)', og.investigations.semenOn ? semen.volume : ''],
+                ['Semen — count (M/ml)', og.investigations.semenOn ? semen.count : ''],
+                ['Semen — progressive %', og.investigations.semenOn ? semen.progressive : ''],
+                ['Semen — normal %', og.investigations.semenOn ? semen.normal : ''],
+                ['Earlier investigation notes', og.investigations.legacy],
+                ['Examination Method', og.examination.method],
+                ['Uterus', og.examination.uterus],
+                ['RT Adnexa', og.examination.rtAdnexa],
+                ['LT Adnexa', og.examination.ltAdnexa],
+                ['Pelvis', og.examination.pelvis],
+                ['Other Exam', og.examination.other],
                 ['Impression', og.impression],
-                ['Weight Reduction', og.management?.weightReduction],
-                ['Management Labs', og.management?.labs],
-                ['Vitamins / Drugs', og.management?.vitamins],
-                ['Treatment Plan', og.management?.treatmentPlan]
+                ['Wt', og.management.weightReduction],
+                ['Management Labs', og.management.labs],
+                ['Vitamins / Drugs', og.management.vitamins],
+                ['Treatment Plan', og.management.treatmentPlan]
             ];
             const hasOg = ogFields.some(([_, v]) => v && String(v).trim());
             if (hasOg) {
                 html += `<div style="margin:12px 0;padding:12px;background:#eef2ff;border-radius:8px;border:1px solid #c7d2fe">`;
-                html += `<h4 style="color:#7e22ce;margin-bottom:8px">🩺 O&G / Infertility</h4>`;
+                html += `<h4 style="color:#7e22ce;margin-bottom:8px">🩺 History</h4>`;
                 ogFields.forEach(([label, val]) => {
                     if (val && String(val).trim()) {
-                        html += `<div><strong>${label}:</strong> ${esc(val)}</div>`;
+                        html += `<div style="white-space:pre-wrap"><strong>${label}:</strong> ${esc(val)}</div>`;
                     }
                 });
                 html += `</div>`;
@@ -3105,13 +3691,14 @@ function enableBulletList(el) {
             openModal('rxModal');
         }
 
-        function priceFor(type) { return type === 'New' ? num(data.settings.examPrice) : (type === 'Follow-up' ? num(data
-            .settings.followupPrice) : 0); }
+        function priceFor(type) { const k = vtKind(type); return k === 'new' ? num(data.settings.examPrice) : (k ===
+            'followup' ? num(data.settings.followupPrice) : 0); }
 
         function occurrences() {
-            const list = data.patients.map(p => ({ date: p.date, visitType: p.visitType, patientId: p.id }));
-            (data.visits || []).forEach(v => list.push({ date: v.date, visitType: v.visitType, patientId: v
-                    .patientId }));
+            const list = data.patients.map(p => ({ date: p.date, time: p.time, visitType: p.visitType,
+                visitPurpose: p.visitPurpose, patientId: p.id }));
+            (data.visits || []).forEach(v => list.push({ date: v.date, time: v.time, visitType: v.visitType,
+                visitPurpose: v.visitPurpose, patientId: v.patientId }));
             return list.filter(o => o.date);
         }
 
@@ -3129,15 +3716,166 @@ function enableBulletList(el) {
         function renderStatsPage() {
             const t = todayStr();
             const occ = occurrences();
+
+            // ---- Daily ----
             const byDay = {};
             occ.forEach(o => { if (!byDay[o.date]) byDay[o.date] = { count: 0, exam: 0, followup: 0, rev: 0 };
-                byDay[o.date].count++; if (o.visitType === 'New') byDay[o.date].exam++; else if (o.visitType ===
-                    'Follow-up') byDay[o.date].followup++;
+                byDay[o.date].count++; if (isNewVisit(o.visitType)) byDay[o.date].exam++; else if (isFollowupVisit(o
+                    .visitType)) byDay[o.date].followup++;
                 byDay[o.date].rev += priceFor(o.visitType); });
             const days = Object.keys(byDay).sort((a, b) => b < a ? -1 : 1);
             $('statsDayBody').innerHTML = days.length ? days.map(d =>
                 `<tr><td>${esc(fmtDate(d))}</td><td>${byDay[d].count}</td><td>${byDay[d].exam}</td><td>${byDay[d].followup}</td><td>${byDay[d].rev}</td></tr>`
                 ).join('') : '<tr><td colspan="5" class="empty">No data</td></tr>';
+
+            // ---- Monthly ----
+            const byMonth = {};
+            occ.forEach(o => { const m = String(o.date).slice(0, 7); if (!byMonth[m]) byMonth[m] = { count: 0, exam: 0,
+                    followup: 0, rev: 0 };
+                byMonth[m].count++; if (isNewVisit(o.visitType)) byMonth[m].exam++; else if (isFollowupVisit(o
+                    .visitType)) byMonth[m].followup++;
+                byMonth[m].rev += priceFor(o.visitType); });
+            const months = Object.keys(byMonth).sort((a, b) => b < a ? -1 : 1);
+            $('statsMonthBody').innerHTML = months.length ? months.map(m =>
+                `<tr><td>${esc(monthLabel(m))}</td><td>${byMonth[m].count}</td><td>${byMonth[m].exam}</td><td>${byMonth[m].followup}</td><td>${byMonth[m].rev}</td></tr>`
+                ).join('') : '<tr><td colspan="5" class="empty">No data</td></tr>';
+
+            // ---- General tiles ----
+            const thisMonth = t.slice(0, 7);
+            const mo = byMonth[thisMonth] || { count: 0, rev: 0 };
+            const totalRev = occ.reduce((s, o) => s + priceFor(o.visitType), 0);
+            const ages = data.patients.map(p => num(p.age)).filter(a => a > 0);
+            const avgAge = ages.length ? Math.round(ages.reduce((s, a) => s + a, 0) / ages.length) : 0;
+            const visitsPer = data.patients.length ? (occ.length / data.patients.length) : 0;
+            const newCount = occ.filter(o => isNewVisit(o.visitType)).length;
+            const fuCount = occ.filter(o => isFollowupVisit(o.visitType)).length;
+            const pendingToday = data.patients.filter(p => (p.status === 'Waiting' || p.status === 'Called') && p
+                .date === t).length;
+            const overdue = data.patients.filter(p => p.status !== 'Done' && p.date && p.date < t).length;
+            const upcoming = data.patients.filter(p => p.date && p.date > t).length;
+            $('statsGeneral').innerHTML = [
+                ['Total Patients', data.patients.length],
+                ['Total Visits', occ.length],
+                ['Cases This Month', mo.count],
+                ['Revenue This Month (EGP)', mo.rev],
+                ['Total Revenue (EGP)', totalRev],
+                ['New Visits', newCount],
+                ['Follow-up Visits', fuCount],
+                ['Avg Visits / Patient', visitsPer ? visitsPer.toFixed(1) : '0'],
+                ['Average Age', avgAge || '—'],
+                ['Prescriptions', data.prescriptions.length],
+                ['Lab Results', (data.labResults || []).length],
+                ['Saved Medical Files', (data.medicalFiles || []).length],
+                ['Images Attached', (data.attachments || []).length],
+                ['Waiting Today', pendingToday],
+                ['Upcoming Bookings', upcoming],
+                ['Past & Not Done', overdue]
+            ].map(([lbl, v]) => `<div class="stat"><div class="num">${esc(v)}</div><div class="lbl">${esc(lbl)}</div></div>`)
+                .join('');
+
+            // ---- Distributions ----
+            $('statsPurpose').innerHTML = barTable(countBy(occ.map(o => o.visitPurpose)), 'Visit Purpose', occ.length);
+            $('statsSource').innerHTML = barTable(countBy(data.patients.map(p => sourceLabel(p))), 'Source', data
+                .patients.length);
+
+            // ---- Busiest weekday / hour ----
+            const WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const wd = {};
+            occ.forEach(o => { const d = new Date(o.date + 'T00:00:00'); if (!isNaN(d)) { const k = WD[d.getDay()];
+                    wd[k] = (wd[k] || 0) + 1; } });
+            $('statsWeekday').innerHTML = barTable(wd, 'Weekday', occ.length);
+            const hr = {};
+            occ.forEach(o => { if (!o.time) return; const h = String(o.time).slice(0, 2);
+                hr[h + ':00'] = (hr[h + ':00'] || 0) + 1; });
+            $('statsHour').innerHTML = barTable(hr, 'Hour', Object.values(hr).reduce((s, n) => s + n, 0));
+
+            // ---- Clinical activity ----
+            $('statsDiag').innerHTML = barTable(countBy(data.prescriptions.map(r => r.diagnosis)), 'Diagnosis', data
+                .prescriptions.length, 8);
+            const medNames = [];
+            data.prescriptions.forEach(r => (r.meds || []).forEach(m => { if (m.name) medNames.push(m.name); }));
+            $('statsMeds').innerHTML = barTable(countBy(medNames), 'Medication', medNames.length, 8);
+            const labNames = (data.labResults || []).map(l => l.testName);
+            data.prescriptions.forEach(r => (r.labs || []).forEach(l => labNames.push(l)));
+            $('statsLabs').innerHTML = barTable(countBy(labNames), 'Test', labNames.length, 8);
+
+            // ---- Return rate by age group ----
+            renderReturnRate(occ);
+
+            // ---- Insight line ----
+            const topDay = days.map(d => [d, byDay[d].count]).sort((a, b) => b[1] - a[1])[0];
+            const topWd = Object.entries(wd).sort((a, b) => b[1] - a[1])[0];
+            const topSrc = Object.entries(countBy(data.patients.map(p => sourceLabel(p)))).sort((a, b) => b[1] - a[1])[0];
+            const bits = [];
+            if (topWd) bits.push(`busiest weekday is <b>${esc(topWd[0])}</b> (${topWd[1]} visits)`);
+            if (topDay) bits.push(`best single day was <b>${esc(fmtDate(topDay[0]))}</b> (${topDay[1]} cases)`);
+            if (topSrc) bits.push(`most patients come from <b>${esc(topSrc[0])}</b> (${topSrc[1]})`);
+            if (occ.length) bits.push(`follow-up share is <b>${Math.round(fuCount/occ.length*100)}%</b>`);
+            $('statsInsight').innerHTML = bits.length ? '💡 <div>' + bits.join(' &nbsp;•&nbsp; ') + '</div>' :
+                '💡 <div>No data yet — register a few patients to see insights here.</div>';
+        }
+
+        function monthLabel(m) {
+            try { const [y, mm] = m.split('-'); return new Date(+y, +mm - 1, 1).toLocaleDateString('en-US', { month: 'long',
+                    year: 'numeric' }); } catch (e) { return m; }
+        }
+
+        function sourceLabel(p) {
+            if (!p.sourceCategory) return 'Not recorded';
+            if (p.sourceCategory === 'Social Media' && p.sourceSocial) return 'Social Media — ' + p.sourceSocial;
+            return p.sourceCategory;
+        }
+
+        function countBy(values) {
+            const out = {};
+            (values || []).forEach(v => { const k = (v === undefined || v === null || String(v).trim() === '') ?
+                    'Not recorded' : String(v).trim();
+                out[k] = (out[k] || 0) + 1; });
+            return out;
+        }
+
+        function barTable(counts, label, total, limit) {
+            const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            const shown = limit ? rows.slice(0, limit) : rows;
+            if (!shown.length) return '<div class="empty">No data</div>';
+            const max = shown[0][1] || 1;
+            const denom = total || rows.reduce((s, r) => s + r[1], 0) || 1;
+            const hidden = rows.length - shown.length;
+            return `<table><thead><tr><th>${esc(label)}</th><th>Count</th><th>%</th><th style="width:35%"></th></tr></thead><tbody>` +
+                shown.map(([k, n]) =>
+                    `<tr><td>${esc(k)}</td><td>${n}</td><td>${Math.round(n/denom*100)}%</td>
+                     <td><div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(n/max*100)}%"></div></div></td></tr>`
+                ).join('') + '</tbody></table>' + (hidden > 0 ?
+                    `<div style="font-size:12px;color:#94a3b8;margin-top:6px">+ ${hidden} more not shown</div>` : '');
+        }
+
+        function renderReturnRate(occ) {
+            const GROUPS = [
+                ['Under 20', 0, 19],
+                ['20 – 29', 20, 29],
+                ['30 – 39', 30, 39],
+                ['40 – 49', 40, 49],
+                ['50+', 50, 200]
+            ];
+            const visitsByPatient = {};
+            occ.forEach(o => { if (o.patientId) visitsByPatient[o.patientId] = (visitsByPatient[o.patientId] || 0) + 1; });
+            let totAll = 0,
+                retAll = 0;
+            const rows = GROUPS.map(([lbl, lo, hi]) => {
+                const inGroup = data.patients.filter(p => { const a = num(p.age); return a >= lo && a <= hi; });
+                const ret = inGroup.filter(p => (visitsByPatient[p.id] || 0) > 1).length;
+                totAll += inGroup.length;
+                retAll += ret;
+                return [lbl, inGroup.length, ret];
+            });
+            const unknown = data.patients.filter(p => !num(p.age)).length;
+            $('statsAgeBody').innerHTML = rows.map(([lbl, tot, ret]) =>
+                `<tr><td>${esc(lbl)}</td><td>${tot}</td><td>${ret}</td><td>${tot?Math.round(ret/tot*100):0}%</td></tr>`
+            ).join('') + (unknown ?
+                `<tr><td>Age not recorded</td><td>${unknown}</td><td>—</td><td>—</td></tr>` : '');
+            $('statsAgeSummary').innerHTML = totAll ?
+                `Overall return rate: <b>${Math.round(retAll/totAll*100)}%</b> — ${retAll} of ${totAll} patients came back more than once.` :
+                'No patients with a recorded age yet.';
         }
 
         let users = [],
@@ -3193,9 +3931,7 @@ function enableBulletList(el) {
             $('clinicName').value = data.settings.clinicName || '';
             $('examPrice').value = data.settings.examPrice || 0;
             $('followupPrice').value = data.settings.followupPrice || 0;
-            $('rxHeader').value = data.settings.rxHeader || '';
-            $('mfHeader').value = data.settings.mfHeader || '';
-            ['visitPurposes', 'sources', 'historyOptions', 'chronicOptions'].forEach(k => {
+            ['visitPurposes', 'sources', 'rxLabTests'].forEach(k => {
                 $('list-' + k).innerHTML = (data.settings[k] || []).map((v, i) =>
                     `<li>${esc(v)}<button onclick="delSetting('${k}',${i})">✖</button></li>`).join('') ||
                     '<li style="color:#94a3b8">Empty</li>';
@@ -3207,9 +3943,49 @@ function enableBulletList(el) {
         function renderUsersMgmt() {
             const box = $('usersMgmtList');
             if (!box) return;
-            box.innerHTML = data.staffProfiles.map(u =>
-                `<div class="rx-hist-item"><span>${u.blocked?'':''} <b>${esc(u.username)}</b></span><span><button class="btn sm ${u.blocked?'blue':'gray'}" onclick="toggleBlockUser('${u.id}')">${u.blocked?'✅ Unblock':'🚫 Block'}</button></span></div>`
-                ).join('');
+            const list = [...data.staffProfiles].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+            box.innerHTML = list.length ? list.map(u => {
+                const me = currentUser && u.id === currentUser.id;
+                return `<div class="rx-hist-item">
+                        <span>${u.blocked?'🚫':'👤'} <b>${esc(u.username)}</b>${me?' <span class="chip call">you</span>':''}${u.blocked?' <span class="chip wait">blocked</span>':''}</span>
+                        <span style="display:flex;gap:4px">
+                            <button class="btn sm ${u.blocked?'blue':'gray'}" onclick="toggleBlockUser('${u.id}')">${u.blocked?'✅ Unblock':'🚫 Block'}</button>
+                            <button class="btn sm red" onclick="deleteStaffUser('${u.id}')" ${me?'disabled title="You cannot delete the account you are logged in with"':'title="Delete this account permanently"'}>🗑 Delete</button>
+                        </span>
+                    </div>`;
+            }).join('') : '<div class="empty">No accounts</div>';
+        }
+
+        async function deleteStaffUser(id) {
+            const u = data.staffProfiles.find(x => x.id === id);
+            if (!u) return;
+            if (currentUser && id === currentUser.id) { toast('⚠ You cannot delete the account you are logged in with'); return; }
+            if (data.staffProfiles.length <= 1) { toast('⚠ Cannot delete the only remaining account'); return; }
+            if (!confirm(`Delete the account "${u.username}" permanently?\n\nThey will no longer be able to log in. Patient data is not affected.`))
+                return;
+            // delete_staff_account() is SECURITY DEFINER: it removes the profile row and the
+            // auth.users row, so the username becomes free again.
+            const { error } = await sb.rpc('delete_staff_account', { target_id: id });
+            if (error) {
+                console.error(error);
+                // Fall back to removing just the profile row — afterLogin() refuses anyone
+                // without a profile, so the account can no longer get in either way.
+                await dbDel('staffProfiles', id);
+                toast('🗑 Account revoked (login blocked). Run the SQL migration for full deletion.');
+                return;
+            }
+            data.staffProfiles = data.staffProfiles.filter(x => x.id !== id);
+            renderUsersMgmt();
+            toast('🗑 Account deleted');
+        }
+
+        async function changeMyPassword() {
+            const pass = $('myNewPass').value;
+            if (!pass || pass.length < 6) { toast('⚠ Password must be at least 6 characters'); return; }
+            const { error } = await sb.auth.updateUser({ password: pass });
+            if (error) { toast('❌ ' + (error.message || 'Failed')); return; }
+            $('myNewPass').value = '';
+            toast('✅ Password changed');
         }
 
         async function addStaffUser() {
@@ -3302,17 +4078,6 @@ function enableBulletList(el) {
             if (!data.settings.prescriptionOrder || !data.settings.prescriptionOrder.length) {
                 data.settings.prescriptionOrder = ['patientInfo', 'diagnosis', 'medications', 'labs', 'footer'];
             }
-        }
-
-        function loadHeaders() {
-            $('rxHeader').value = data.settings.rxHeader || '';
-            $('mfHeader').value = data.settings.mfHeader || '';
-        }
-
-        async function saveHeaders() {
-            await saveSetting('rxHeader', $('rxHeader').value.trim());
-            await saveSetting('mfHeader', $('mfHeader').value.trim());
-            toast('✅ Headers saved');
         }
 
         let rxPatient = null;
@@ -3443,7 +4208,6 @@ function enableBulletList(el) {
             renderRxHistory(); }
 
 function viewRx(rxId){
-    if(!rxPatient)return;
     const r = data.prescriptions.find(x=>x.id===rxId);
     if(!r)return;
 
@@ -3570,10 +4334,9 @@ th {
 }
         // ===== PRINT PRESCRIPTION =====
 function printRx(rxId){
-    if(!rxPatient)return;
     let r;
     if(rxId){ r = data.prescriptions.find(x=>x.id===rxId); }
-    else { r = data.prescriptions.filter(x=>x.patientId===rxPatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0))[0]; }
+    else if(rxPatient){ r = data.prescriptions.filter(x=>x.patientId===rxPatient.id).sort((a,b)=>(b.ts||0)-(a.ts||0))[0]; }
     if(!r)return;
 
     // بناء HTML للأدوية فقط (بالإنجليزي)
@@ -3729,7 +4492,6 @@ th {
       if (!filePatient) return;
             const p = filePatient;
             const clinic = data.settings.clinicName || "Women's Health Clinic";
-            const header = data.settings.mfHeader || '';
             const labs = (data.labResults || []).filter(l => l.patientId === p.id).sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
             let sourceText = p.sourceCategory || 'N/A';
@@ -3737,27 +4499,27 @@ th {
             else if (p.sourceCategory === 'Friend') sourceText += ': ' + (p.sourceFriendName || 'N/A');
             else if (p.sourceCategory === 'Doctor Recommendation') sourceText += ': Dr. ' + (p.sourceDoctorName || 'N/A');
 
-            let maritalText = p.maritalStatus || 'N/A';
-            if (p.maritalStatus === 'Married') {
-                maritalText += ` | First Marriage: ${p.isFirstMarriage||'N/A'} | Years: ${p.marriedYears||'?'}`;
-                maritalText += ` | Children: ${p.hasChildren||'N/A'}`;
-                if (p.hasChildren === 'Yes') maritalText += ` (${p.childrenCount||'0'}, ${p.deliveryType||'N/A'})`;
-            }
+            const maritalText = esc(maritalSummary(p));
+            const husbandText = esc(husbandSummary(p));
 
-            const og = p.ogHistory || {};
-            const ogMenstrual = og.menstrual || {};
-            const ogInfertility = og.infertility || {};
-            const ogInvestigations = og.investigations || {};
-            const ogExamination = og.examination || {};
-            const ogManagement = og.management || {};
+            const og = normalizedOg(p);
+            const ogMenstrual = og.menstrual;
+            const ogObstetric = og.obstetric;
+            const ogInfertility = og.infertility;
+            const ogInvestigations = og.investigations;
+            const ogExamination = og.examination;
+            const ogManagement = og.management;
+            const ogSemen = ogInvestigations.semen || {};
 
+            const hasObstetric = ogObstetric.deliveries || ogObstetric.normalOn || ogObstetric.csOn || ogObstetric.notes;
+            const hasSemen = ogInvestigations.semenOn && (ogSemen.date || ogSemen.labName || ogSemen.volume ||
+                ogSemen.count || ogSemen.progressive || ogSemen.normal);
             const hasOgContent =
                 (ogMenstrual.regularity || ogMenstrual.cycleDays || ogMenstrual.durationDays ||
-                    og.obstetric || og.pastMedical || og.pastSurgical ||
+                    hasObstetric || og.pastMedical || og.pastSurgical ||
                     ogInfertility.laparoscope || ogInfertility.hystroscope || ogInfertility.icsi ||
                     og.contraceptive || og.complaint || og.presentHistory ||
-                    ogInvestigations.labs || ogInvestigations.hsg || ogInvestigations.semen || ogInvestigations
-                    .uss3d ||
+                    ogInvestigations.hsg || ogInvestigations.uss || hasSemen || ogInvestigations.legacy ||
                     ogExamination.method || ogExamination.uterus || ogExamination.rtAdnexa || ogExamination
                     .ltAdnexa || ogExamination.pelvis || ogExamination.other ||
                     og.impression ||
@@ -3792,9 +4554,23 @@ th {
                         </div>
                     `);
                 }
-                if (og.obstetric) ogParts.push(
-                    `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🤰 Obstetric History</h4><div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">${esc(og.obstetric)}</div></div>`
-                    );
+                if (hasObstetric) {
+                    const typeBits = [];
+                    if (ogObstetric.normalOn) typeBits.push('Normal Delivery' + (ogObstetric.normalCount ? ' × ' +
+                        ogObstetric.normalCount : ''));
+                    if (ogObstetric.csOn) typeBits.push('Cesarean Section' + (ogObstetric.csCount ? ' × ' +
+                        ogObstetric.csCount : ''));
+                    ogParts.push(`
+                        <div style="margin-bottom:12px">
+                            <h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🤰 Obstetric History</h4>
+                            <div style="font-size:14px;line-height:2">
+                                ${ogObstetric.deliveries?`<div><strong>Number of deliveries:</strong> ${esc(ogObstetric.deliveries)}</div>`:''}
+                                ${typeBits.length?`<div><strong>Type of deliveries:</strong> ${esc(typeBits.join(' &nbsp;|&nbsp; '))}</div>`:''}
+                            </div>
+                            ${ogObstetric.notes?`<div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px;margin-top:6px">${esc(ogObstetric.notes)}</div>`:''}
+                        </div>
+                    `);
+                }
                 if (og.pastMedical) ogParts.push(
                     `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🏥 Past History — Medical</h4><div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">${esc(og.pastMedical)}</div></div>`
                     );
@@ -3805,10 +4581,10 @@ th {
                     ogParts.push(`
                         <div style="margin-bottom:12px">
                             <h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🔬 Infertility Management</h4>
-                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:14px">
-                                ${ogInfertility.laparoscope?`<div><strong>Laparoscope:</strong> ${esc(ogInfertility.laparoscope)}</div>`:''}
-                                ${ogInfertility.hystroscope?`<div><strong>Hystroscope:</strong> ${esc(ogInfertility.hystroscope)}</div>`:''}
-                                ${ogInfertility.icsi?`<div><strong>ICSI:</strong> ${esc(ogInfertility.icsi)}</div>`:''}
+                            <div style="font-size:14px;line-height:1.9">
+                                ${ogInfertility.laparoscope?`<div style="white-space:pre-wrap"><strong>Laparoscope:</strong> ${esc(ogInfertility.laparoscope)}</div>`:''}
+                                ${ogInfertility.hystroscope?`<div style="white-space:pre-wrap"><strong>Hysteroscope:</strong> ${esc(ogInfertility.hystroscope)}</div>`:''}
+                                ${ogInfertility.icsi?`<div style="white-space:pre-wrap"><strong>ICSI:</strong> ${esc(ogInfertility.icsi)}</div>`:''}
                             </div>
                         </div>
                     `);
@@ -3822,23 +4598,44 @@ th {
                 if (og.presentHistory) ogParts.push(
                     `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px"> Present History</h4><div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">${esc(og.presentHistory)}</div></div>`
                     );
-                if (ogInvestigations.labs) ogParts.push(
-                    `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px"> Investigations — Labs</h4><div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">${esc(ogInvestigations.labs)}</div></div>`
-                    );
-                if (ogInvestigations.hsg || ogInvestigations.semen) {
-                    ogParts.push(`
-                        <div style="margin-bottom:12px">
-                            <h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🔬 Investigations — HSG / Semen</h4>
-                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:14px">
-                                ${ogInvestigations.hsg?`<div><strong>HSG:</strong> ${esc(ogInvestigations.hsg)}</div>`:''}
-                                ${ogInvestigations.semen?`<div><strong>Semen:</strong> ${esc(ogInvestigations.semen)}</div>`:''}
-                            </div>
-                        </div>
-                    `);
+                if (ogInvestigations.hsg || ogInvestigations.uss || hasSemen || ogInvestigations.legacy) {
+                    let invHtml = `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🔬 Investigation</h4>`;
+                    if (ogInvestigations.hsg) {
+                        invHtml += `<div style="font-size:14px;margin-bottom:6px"><strong>HSG:</strong> ${esc(ogInvestigations.hsg)}</div>`;
+                        if (ogInvestigations.hsg === 'Abnormal' && ogInvestigations.hsgReason) invHtml +=
+                            `<div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px;margin-bottom:8px">${esc(ogInvestigations.hsgReason)}</div>`;
+                    }
+                    if (ogInvestigations.uss) {
+                        invHtml += `<div style="font-size:14px;margin-bottom:6px"><strong>USS / 3D:</strong> ${esc(ogInvestigations.uss)}${ogInvestigations.ussType?' — '+esc(ogInvestigations.ussType):''}</div>`;
+                        if (ogInvestigations.ussFindings) invHtml +=
+                            `<div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px;margin-bottom:8px">${esc(ogInvestigations.ussFindings)}</div>`;
+                    }
+                    if (hasSemen) {
+                        invHtml += `<div style="font-size:14px;margin:8px 0 6px"><strong>Semen Analysis</strong></div>
+                            <table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:8px">
+                                <thead><tr style="background:#f1f5f9">
+                                    <th style="padding:6px;text-align:left;border:1px solid #e2e8f0">Date</th>
+                                    <th style="padding:6px;text-align:left;border:1px solid #e2e8f0">Lab</th>
+                                    <th style="padding:6px;text-align:left;border:1px solid #e2e8f0">Volume (ml)</th>
+                                    <th style="padding:6px;text-align:left;border:1px solid #e2e8f0">Count (M/ml)</th>
+                                    <th style="padding:6px;text-align:left;border:1px solid #e2e8f0">Pr %</th>
+                                    <th style="padding:6px;text-align:left;border:1px solid #e2e8f0">Normal %</th>
+                                </tr></thead>
+                                <tbody><tr>
+                                    <td style="padding:6px;border:1px solid #e2e8f0">${esc(ogSemen.date||'—')}</td>
+                                    <td style="padding:6px;border:1px solid #e2e8f0">${esc(ogSemen.labName||'—')}</td>
+                                    <td style="padding:6px;border:1px solid #e2e8f0">${esc(ogSemen.volume||'—')}</td>
+                                    <td style="padding:6px;border:1px solid #e2e8f0">${esc(ogSemen.count||'—')}</td>
+                                    <td style="padding:6px;border:1px solid #e2e8f0">${esc(ogSemen.progressive||'—')}</td>
+                                    <td style="padding:6px;border:1px solid #e2e8f0">${esc(ogSemen.normal||'—')}</td>
+                                </tr></tbody>
+                            </table>`;
+                    }
+                    if (ogInvestigations.legacy) invHtml +=
+                        `<div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">${esc(ogInvestigations.legacy)}</div>`;
+                    invHtml += `</div>`;
+                    ogParts.push(invHtml);
                 }
-                if (ogInvestigations.uss3d) ogParts.push(
-                    `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">📡 USS / 3D</h4><div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">${esc(ogInvestigations.uss3d)}</div></div>`
-                    );
                 if (ogExamination.method || ogExamination.uterus || ogExamination.rtAdnexa || ogExamination
                     .ltAdnexa || ogExamination.pelvis || ogExamination.other) {
                     let examHtml = `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🔍 Examination</h4>`;
@@ -3869,7 +4666,7 @@ th {
                     .treatmentPlan) {
                     let mgmtHtml = `<div><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">💊 Management</h4>`;
                     if (ogManagement.weightReduction) mgmtHtml +=
-                        `<div style="font-size:14px;margin-bottom:8px"><strong>Weight reduction:</strong> ${esc(ogManagement.weightReduction)}</div>`;
+                        `<div style="font-size:14px;margin-bottom:8px"><strong>Wt:</strong> ${esc(ogManagement.weightReduction)}</div>`;
                     if (ogManagement.labs) mgmtHtml +=
                         `<div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px;margin-bottom:8px"><strong>Labs:</strong> ${esc(ogManagement.labs)}</div>`;
                     if (ogManagement.vitamins) mgmtHtml +=
@@ -3944,7 +4741,6 @@ th {
                             <div>🥇زميل مستشفيات فريملي بارك ،انجلترا </div>
                             <div>🥇 عضو و زميل الكلية الملكية لأمراض النساء والتوليد، لندن ،انجلترا</div>
                             <div>🥇 بلوم الحقن المجهري والإخصاب المساعد، مستشفى برمنجهام، انجلترا </div>
-                            ${header?`<div style="margin-top:8px;font-weight:bold;color:#be185d;">${esc(header)}</div>`:''}
                         </div>
                     </div>
 
@@ -3958,19 +4754,7 @@ th {
                             <div class="full"><strong>Address:</strong> ${esc(p.address||'Not recorded')}</div>
                             <div class="full"><strong>Marital Status:</strong> ${maritalText}</div>
                             <div class="full"><strong>How did you know us:</strong> ${esc(sourceText)}</div>
-                            <div class="full"><strong>Husband:</strong> ${esc(p.husbandName||'N/A')} (Age: ${esc(p.husbandAge||'N/A')})</div>
-                        </div>
-                    </div>
-
-                    <div class="section">
-                        <h3>🩺 Medical History</h3>
-                        <div style="margin-bottom:12px">
-                            <strong>Medical History:</strong> ${(p.history&&p.history.checked&&p.history.checked.length)?esc(p.history.checked.join(', ')):'None'}
-                            ${(p.history&&p.history.notes)?`<div style="color:#64748b;margin-top:5px">Notes: ${esc(p.history.notes)}</div>`:''}
-                        </div>
-                        <div>
-                            <strong>Chronic Conditions:</strong> ${(p.chronic&&p.chronic.checked&&p.chronic.checked.length)?esc(p.chronic.checked.join(', ')):'None'}
-                            ${(p.chronic&&p.chronic.notes)?`<div style="color:#64748b;margin-top:5px">Notes: ${esc(p.chronic.notes)}</div>`:''}
+                            <div class="full"><strong>Husband:</strong> ${husbandText}</div>
                         </div>
                     </div>
 
@@ -4093,11 +4877,13 @@ th {
                 const fresh = data.patients.find(x => x.id === filePatient.id);
                 if (fresh) { filePatient = fresh;
                     refreshFileInfo();
+                    renderPfIdentity();
                     renderPfAttachments();
                     renderVisitHistory();
                     renderSavedMedicalFiles(); }
             }
-            if ($('rxModal').classList.contains('open')) renderRxHistory();
+            if ($('rxModal').classList.contains('open')) { renderRxHistory();
+                renderRxLabsChecklist(); }
             if (!$('tab-stats').hidden) renderStatsPage();
         }
 
@@ -4133,7 +4919,8 @@ th {
                 renderPatients(); };
             $('patResetBtn').onclick = resetPatFilters;
             $('patExportBtn').onclick = exportExcel;
-            $('pfSaveMed').onclick = savePfMed;
+            $('pdSaveBtn').onclick = savePersonalDetails;
+            bindPdBehaviors();
             $('ogSaveBtn').onclick = saveOgHistory;
             bindOgBehaviors();
             $('pfFileInput').onchange = e => { handleFiles(e.target.files);
@@ -4148,21 +4935,22 @@ th {
             $('saveClinicBtn').onclick = saveClinicName;
             $('saveExamPriceBtn').onclick = saveExamPrice;
             $('saveFollowupPriceBtn').onclick = saveFollowupPrice;
-            $('saveHeadersBtn').onclick = saveHeaders;
             $('addPurposeBtn').onclick = () => addSetting('visitPurposes', 'newPurpose');
             $('addSourceBtn').onclick = () => addSetting('sources', 'newSource');
-            $('addHistOptBtn').onclick = () => addSetting('historyOptions', 'newHistOpt');
-            $('addChronicOptBtn').onclick = () => addSetting('chronicOptions', 'newChronicOpt');
+            $('addLabTestOptBtn').onclick = () => addSetting('rxLabTests', 'newLabTestOpt');
             [
                 ['newPurpose', 'visitPurposes'],
                 ['newSource', 'sources'],
-                ['newHistOpt', 'historyOptions'],
-                ['newChronicOpt', 'chronicOptions']
+                ['newLabTestOpt', 'rxLabTests']
             ].forEach(([id, k]) => { $(id).addEventListener('keydown', e => { if (e.key === 'Enter') addSetting(k,
                         id); }); });
             $('addUserBtn').onclick = addStaffUser;
             $('newUserPass').addEventListener('keydown', e => { if (e.key === 'Enter') addStaffUser(); });
+            $('changeMyPassBtn').onclick = changeMyPassword;
+            $('myNewPass').addEventListener('keydown', e => { if (e.key === 'Enter') changeMyPassword(); });
             $('loginBtn').onclick = doLogin;
+            $('bootstrapToggle').onclick = e => { e.preventDefault();
+                toggleBootstrapMode(); };
             $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
             $('loginUser').addEventListener('keydown', e => { if (e.key === 'Enter') $('loginPass').focus(); });
             $('logoutBtn').onclick = doLogout;
@@ -4174,9 +4962,212 @@ th {
             $('rxSaveBtn').onclick = () => saveRx(false);
             $('rxSavePrintBtn').onclick = () => saveRx(true);
             $('exportBackupBtn').onclick = exportBackup;
+           // ===== استيراد النسخة الاحتياطية - نسخة متطورة =====
+async function importBackup() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
 
-            loadPrintOrder();
-            loadHeaders();
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                const backup = JSON.parse(ev.target.result);
+                toast('⏳ جاري استعادة البيانات...');
+
+                // ===== 1. حفظ المرضى أولاً =====
+                const savedPatients = [];
+                for (const p of (backup.patients || [])) {
+                    try {
+                        const clean = {
+                            id: p.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id) ? p.id : crypto.randomUUID(),
+                            name: p.name || '',
+                            age: p.age || null,
+                            husbandName: p.husbandName || p.husband_name || '',
+                            husbandJob: p.husbandJob || p.husband_job || '',
+                            phone: p.phone || '',
+                            visitPurpose: p.visitPurpose || p.visit_purpose || '',
+                            visitType: p.visitType || p.visit_type || '',
+                            sourceCategory: p.sourceCategory || p.source_category || '',
+                            sourceSocial: p.sourceSocial || p.source_social || '',
+                            sourceFriendName: p.sourceFriendName || p.source_friend_name || '',
+                            sourceDoctorName: p.sourceDoctorName || p.source_doctor_name || '',
+                            sourceStreetDetails: p.sourceStreetDetails || p.source_street_details || '',
+                            sourceOther: p.sourceOther || p.source_other || '',
+                            date: p.date || null,
+                            time: p.time || null,
+                            status: p.status || 'Waiting',
+                            notes: p.notes || '',
+                            createdAt: p.createdAt || p.created_at || Date.now(),
+                            calledAt: p.calledAt || p.called_at || null,
+                            maritalStatus: p.maritalStatus || p.marital_status || '',
+                            isFirstMarriage: p.isFirstMarriage || p.is_first_marriage || '',
+                            marriedYears: p.marriedYears || p.married_years || null,
+                            hasChildren: p.hasChildren || p.has_children || '',
+                            childrenCount: p.childrenCount || p.children_count || null,
+                            deliveryType: p.deliveryType || p.delivery_type || '',
+                            husbandAge: p.husbandAge || p.husband_age || null,
+                            husbandSmoker: p.husbandSmoker || p.husband_smoker || '',
+                            husbandDiseased: p.husbandDiseased || p.husband_diseased || '',
+                            husbandDiseaseText: p.husbandDiseaseText || p.husband_disease_text || '',
+                            husbandFirstMarriage: p.husbandFirstMarriage || p.husband_first_marriage || '',
+                            husbandOffspring: p.husbandOffspring || p.husband_offspring || '',
+                            husbandOffspringCount: p.husbandOffspringCount || p.husband_offspring_count || null,
+                            address: p.address || p.street || p.city || '',
+                            history: typeof p.history === 'string' ? { checked: [], notes: p.history } :
+                                     (p.history && typeof p.history === 'object' ? { checked: p.history.checked || [], notes: p.history.notes || '' } : { checked: [], notes: '' }),
+                            chronic: typeof p.chronic === 'string' ? { checked: [], notes: p.chronic } :
+                                     (p.chronic && typeof p.chronic === 'object' ? { checked: p.chronic.checked || [], notes: p.chronic.notes || '' } : { checked: [], notes: '' }),
+                            ogHistory: p.ogHistory || p.og_history || {}
+                        };
+
+                        await dbPut('patients', clean);
+                        savedPatients.push({ oldId: p.id, newId: clean.id, name: p.name });
+                        console.log('✅', clean.name);
+                    } catch (err) {
+                        console.error('❌ فشل حفظ المريض:', p.name, err);
+                    }
+                }
+
+                // ===== 2. استعادة باقي الجداول مع الحفاظ على الربط بالمريض =====
+                const tables = [
+                    { name: 'visits', key: 'patient_id' },
+                    { name: 'prescriptions', key: 'patient_id' },
+                    { name: 'labResults', key: 'patient_id' },
+                    { name: 'attachments', key: 'patient_id' },
+                    { name: 'chat', key: 'patient_id' },
+                    { name: 'staffProfiles', key: 'id' }
+                ];
+
+                let successCount = savedPatients.length;
+                let errorCount = 0;
+
+                for (const { name, key } of tables) {
+                    const records = backup[name] || [];
+                    if (!Array.isArray(records) || !records.length) continue;
+
+                    for (const originalRec of records) {
+                        try {
+                            const rec = { ...originalRec };
+
+                            if (key === 'patient_id') {
+                                // النسخ الاحتياطية الجديدة تستخدم patientId، والقديمة قد تستخدم patient_id.
+                                // بعض النسخ القديمة من الروشتات/التحاليل لا تحتوي الـ ID، لكنها تحتوي اسم المريضة.
+                                const oldPatientId = rec.patient_id || rec.patientId || null;
+                                const recordPatientName = rec.patientName || rec.patient_name || rec.patient || rec.name || '';
+
+                                let patient = oldPatientId
+                                    ? savedPatients.find(p => p.oldId === oldPatientId)
+                                    : null;
+
+                                if (!patient && recordPatientName) {
+                                    const wantedName = String(recordPatientName).trim();
+                                    patient = savedPatients.find(p =>
+                                        p.name && String(p.name).trim() === wantedName
+                                    );
+                                }
+
+                                if (!patient) {
+                                    console.warn(`⚠️ تخطي سجل في ${name} - لا يمكن ربط المريض:`, rec);
+                                    errorCount++;
+                                    continue;
+                                }
+
+                                rec.patientId = patient.newId;
+                                delete rec.patient_id;
+                            }
+
+                            if (!rec.id) rec.id = crypto.randomUUID();
+
+                            // تحويل الحقول القديمة إلى الشكل الداخلي الذي تستخدمه dbPut/toRow
+                            if (name === 'visits') {
+                                rec.patientId = rec.patientId || rec.patient_id;
+                                rec.visitPurpose = rec.visitPurpose || rec.visit_purpose || '';
+                                rec.visitType = rec.visitType || rec.visit_type || '';
+                            }
+
+                            if (name === 'prescriptions') {
+                                rec.patientName = rec.patientName || rec.patient_name || '';
+                                rec.patientAge = rec.patientAge || rec.patient_age || null;
+                                rec.diagnosis = rec.diagnosis || '';
+                                rec.meds = Array.isArray(rec.meds) ? rec.meds : [];
+                                rec.labs = Array.isArray(rec.labs) ? rec.labs : [];
+                            }
+
+                            if (name === 'labResults') {
+                                rec.testName = rec.testName || rec.test_name || '';
+                                rec.result = rec.result || '';
+                                rec.notes = rec.notes || '';
+                                rec.date = rec.date || null;
+                            }
+
+                            if (name === 'attachments') {
+                                rec.path = rec.path || '';
+                                rec.url = rec.url || '';
+                                rec.name = rec.name || '';
+                            }
+
+                            if (name === 'chat') {
+                                rec.from = rec.from || rec.from_id;
+                                rec.fromName = rec.fromName || rec.from_name;
+                                rec.to = rec.to || rec.to_id;
+                                rec.toName = rec.toName || rec.to_name;
+                            }
+
+                            if (name === 'staffProfiles') {
+                                rec.createdAt = rec.createdAt || rec.created_at || Date.now();
+                            }
+
+                            // مهم: لا نستخدم toRow هنا؛ dbPut يقوم بالتحويل مرة واحدة فقط.
+                            await dbPut(name, rec);
+                            successCount++;
+                            console.log(`✅ تم استعادة ${name}:`, rec);
+                        } catch (err) {
+                            errorCount++;
+                            console.error(`❌ فشل حفظ ${name}:`, err, originalRec);
+                        }
+                    }
+                }
+
+                // ===== 3. حفظ الإعدادات =====
+                if (backup.settings) {
+                    for (const [k, v] of Object.entries(backup.settings)) {
+                        try {
+                            await saveSetting(k, v);
+                        } catch (err) {
+                            errorCount++;
+                            console.error('❌ فشل استعادة الإعداد:', k, err);
+                        }
+                    }
+                }
+
+                // ===== 4. تحديث الواجهة =====
+                await loadAll();
+                renderAll();
+
+                if (errorCount === 0) {
+                    toast(`✅ تمت الاستعادة بنجاح! (${successCount} سجل)`);
+                } else {
+                    toast(`⚠️ ${successCount} نجاح، ${errorCount} فشل - شوف Console للتفاصيل`);
+                }
+            } catch (err) {
+                toast('❌ خطأ: ' + err.message);
+                console.error(err);
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const btn = document.getElementById('importBackupBtn');
+    if (btn) btn.onclick = importBackup;
+});
+document.getElementById('importBackupBtn').onclick = importBackup;
             boot();
         });
     </script>
