@@ -1252,6 +1252,53 @@
             height: 100%;
             background: linear-gradient(90deg, #be185d, #7e22ce)
         }
+        .gp-entry {
+            border: 1.5px dashed #e2e8f0;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+            position: relative;
+            background: #fdfdff
+        }
+        .gp-entry .gp-entry-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px
+        }
+        .gp-entry .gp-entry-head b {
+            font-size: 12.5px;
+            color: #9d174d
+        }
+        .gp-add-btn {
+            margin-top: 4px
+        }
+        .lab-go-item {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8fafc
+        }
+        .lab-go-item .lab-go-name {
+            font-weight: 700;
+            color: #9d174d;
+            margin-bottom: 6px;
+            display: block;
+            font-size: 13.5px
+        }
+        .lab-go-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px
+        }
+        .lab-go-row input {
+            padding: 8px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            font-family: inherit;
+            width: 100%
+        }
     </style>
 </head>
 <body>
@@ -1655,21 +1702,47 @@
                                 <div class="acc nested">
                                     <div class="acc-head" onclick="toggleAcc('accObstetric')"><h4>Obstetric History</h4><span class="acc-ic" id="ic-accObstetric">▾</span></div>
                                     <div class="acc-body" id="accObstetric" style="display:none">
-                                        <label class="flabel">Number of deliveries</label>
-                                        <input id="og_deliveriesCount" type="number" min="0" class="og-input" placeholder="Number of deliveries">
-                                        <label class="flabel">Type of deliveries <span style="font-weight:400;color:#94a3b8">(both types can be selected)</span></label>
-                                        <div class="two-col">
-                                            <div>
-                                                <label class="check-item" style="width:100%"><input type="checkbox" id="og_delNormalOn" onchange="toggleWrap('og_delNormalWrap',this.checked)"> Normal Delivery</label>
-                                                <div id="og_delNormalWrap" style="display:none;margin-top:6px"><input id="og_delNormalCount" type="number" min="0" class="og-input" placeholder="How many normal deliveries"></div>
-                                            </div>
-                                            <div>
-                                                <label class="check-item" style="width:100%"><input type="checkbox" id="og_delCsOn" onchange="toggleWrap('og_delCsWrap',this.checked)"> Cesarean Section (C-Section)</label>
-                                                <div id="og_delCsWrap" style="display:none;margin-top:6px"><input id="og_delCsCount" type="number" min="0" class="og-input" placeholder="How many C-sections"></div>
-                                            </div>
+                                        <div class="gplade-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+                                            <button type="button" class="btn gray sm gplade-btn" data-letter="G" onclick="toggleGplade('G')">G</button>
+                                            <button type="button" class="btn gray sm gplade-btn" data-letter="P" onclick="toggleGplade('P')">P</button>
+                                            <button type="button" class="btn gray sm gplade-btn" data-letter="L" onclick="toggleGplade('L')">L</button>
+                                            <button type="button" class="btn gray sm gplade-btn" data-letter="D" onclick="toggleGplade('D')">D</button>
+                                            <button type="button" class="btn gray sm gplade-btn" data-letter="A" onclick="toggleGplade('A')">A</button>
+                                            <button type="button" class="btn gray sm gplade-btn" data-letter="E" onclick="toggleGplade('E')">E</button>
                                         </div>
-                                        <label class="flabel">Notes</label>
-                                        <textarea id="og_obstetricNotes" class="og-ta" placeholder="Previous pregnancies, complications..."></textarea>
+
+                                        <div id="gplade_G" class="cond-box" style="display:none">
+                                            <label class="flabel">G</label>
+                                            <input id="og_ob_g" class="og-input" placeholder="Type here...">
+                                        </div>
+
+                                        <div id="gplade_P" class="cond-box" style="display:none">
+                                            <label class="flabel">P entries</label>
+                                            <div id="pEntries"></div>
+                                            <button type="button" class="btn gray sm gp-add-btn" onclick="addPEntry()">➕ Add another P</button>
+                                        </div>
+
+                                        <div id="gplade_L" class="cond-box" style="display:none">
+                                            <label class="flabel">L</label>
+                                            <textarea id="og_ob_l" class="og-ta"></textarea>
+                                        </div>
+
+                                        <div id="gplade_D" class="cond-box" style="display:none">
+                                            <label class="flabel">D</label>
+                                            <textarea id="og_ob_d" class="og-ta"></textarea>
+                                        </div>
+
+                                        <div id="gplade_A" class="cond-box" style="display:none">
+                                            <label class="flabel">A entries</label>
+                                            <div id="aEntries"></div>
+                                            <button type="button" class="btn gray sm gp-add-btn" onclick="addAEntry()">➕ Add another A</button>
+                                        </div>
+
+                                        <div id="gplade_E" class="cond-box" style="display:none">
+                                            <label class="flabel">E entries</label>
+                                            <div id="eEntries"></div>
+                                            <button type="button" class="btn gray sm gp-add-btn" onclick="addEEntry()">➕ Add another E</button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -1761,9 +1834,12 @@
                                         <div class="acc nested" style="margin-top:10px">
                                             <div class="acc-head" onclick="toggleAcc('accInvLabs')"><h4>🧪 Lab Results — Add New Result</h4><span class="acc-ic" id="ic-accInvLabs">▾</span></div>
                                             <div class="acc-body" id="accInvLabs" style="display:none">
-                                                <div style="display:grid;grid-template-columns:1.6fr 1.3fr 1.3fr 90px 38px;gap:8px;font-size:12px;color:#94a3b8;margin-bottom:4px"><span>Test Name</span><span>Result</span><span>Notes</span><span>Date</span><span></span></div>
-                                                <div id="labRows"></div>
-                                                <div class="toolbar" style="margin-top:8px"><button class="btn gray sm" id="labAddRowBtn">➕ Add Test</button></div>
+                                                <p style="font-size:12px;color:#64748b;margin-bottom:8px">✔ Tick one or more tests below (same list as the prescription), then press <b>Go</b> to enter the result &amp; unit for each.</p>
+                                                <div class="add-row"><input id="newInvLabTest" placeholder="Add a test not in the list"><button class="btn primary sm" type="button" id="addInvLabTestBtn">➕ Add</button></div>
+                                                <div id="invLabsChecklist" class="check-grid"></div>
+                                                <div class="toolbar" style="margin-top:8px"><button class="btn blue sm" id="invLabsGoBtn" type="button">▶ Go</button></div>
+                                                <div id="invLabsGoForm" style="margin-top:10px"></div>
+                                                <div id="labRows" style="margin-top:10px"></div>
                                             </div>
                                         </div>
 
@@ -1806,7 +1882,7 @@
                                 <div class="acc nested">
                                     <div class="acc-head" onclick="toggleAcc('accManagement')"><h4>Management</h4><span class="acc-ic" id="ic-accManagement">▾</span></div>
                                     <div class="acc-body" id="accManagement" style="display:none">
-                                        <label class="flabel">Wt</label>
+                                        <label class="flabel">Wt Reduction</label>
                                         <select id="og_weightReduction" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
 
                                         <div class="acc nested">
@@ -3022,6 +3098,17 @@ toast('📤 Exported');
         // Show/hide a conditional wrapper (used by the yes/no + checkbox reveals).
         function toggleWrap(id, on) { const el = $(id); if (el) el.style.display = on ? 'block' : 'none'; }
 
+        // Show/hide a single GPLADE (G P L D A E) obstetric-history panel and sync its button state.
+        function toggleGplade(letter) {
+            const el = $('gplade_' + letter);
+            if (!el) return;
+            const open = el.style.display !== 'none';
+            el.style.display = open ? 'none' : 'block';
+            const btn = document.querySelector('.gplade-btn[data-letter="' + letter + '"]');
+            if (btn) { btn.classList.toggle('primary', !open);
+                btn.classList.toggle('gray', open); }
+        }
+
         function getCheckedFrom(containerId) { return [...document.querySelectorAll('#' + containerId +
                 ' input:checked')].map(i => i.value); }
 
@@ -3112,7 +3199,8 @@ function enableBulletList(el) {
         function bindOgBehaviors() {
             [
                 'og_uterus', 'og_rtAdnexa', 'og_ltAdnexa', 'og_pelvis', 'og_examOther', 'og_impression',
-                'og_mgmtLabs', 'og_mgmtVitamins', 'og_mgmtPlan', 'og_obstetricNotes', 'og_pastMedical',
+                'og_mgmtLabs', 'og_mgmtVitamins', 'og_mgmtPlan', 'og_ob_l', 'og_ob_d',
+                'og_pastMedical',
                 'og_pastSurgical', 'og_laparoscope', 'og_hystroscope', 'og_icsi', 'og_contraceptive',
                 'og_complaint', 'og_presentHistory', 'og_hsgReason', 'og_ussFindings'
             ].forEach(id => enableBulletList($(id)));
@@ -3123,10 +3211,132 @@ function enableBulletList(el) {
             $('og_uss').addEventListener('change', () => toggleWrap('og_ussTypeWrap', $('og_uss').value === 'Yes'));
         }
 
+        // ===== MULTIPLE P / A / E ENTRIES =====
+        // P/A/E each hold an array of entries so the doctor can record more than one pregnancy /
+        // abortion / ectopic episode. Every entry gets its own small removable card.
+        function emptyPEntry() { return { type: '', age: '', gender: '', hospital: '', num: '', drName: '',
+            complication: '', notes: '' }; }
+
+        function emptyAEntry() { return { weeks: '', type: '', complication: '' }; }
+
+        function emptyEEntry() { return { side: '', treatment: '', notes: '' }; }
+
+        let pEntries = [],
+            aEntries = [],
+            eEntries = [];
+
+        function addPEntry(entry) { pEntries.push(entry || emptyPEntry());
+            renderPEntries(); }
+
+        function addAEntry(entry) { aEntries.push(entry || emptyAEntry());
+            renderAEntries(); }
+
+        function addEEntry(entry) { eEntries.push(entry || emptyEEntry());
+            renderEEntries(); }
+
+        function removePEntry(i) { pEntries.splice(i, 1); if (!pEntries.length) pEntries.push(emptyPEntry());
+            renderPEntries(); }
+
+        function removeAEntry(i) { aEntries.splice(i, 1); if (!aEntries.length) aEntries.push(emptyAEntry());
+            renderAEntries(); }
+
+        function removeEEntry(i) { eEntries.splice(i, 1); if (!eEntries.length) eEntries.push(emptyEEntry());
+            renderEEntries(); }
+
+        function renderPEntries() {
+            const box = $('pEntries');
+            if (!box) return;
+            box.innerHTML = pEntries.map((e, i) => `
+                <div class="gp-entry" data-i="${i}">
+                    <div class="gp-entry-head"><b>P ${i+1}</b>${pEntries.length>1?`<button type="button" class="btn sm red" onclick="removePEntry(${i})">✖ Remove</button>`:''}</div>
+                    <select class="og-input p-type" onchange="syncPEntry(${i})"><option value="">-- Select --</option><option ${e.type==='S.V.D'?'selected':''}>S.V.D</option><option ${e.type==='C.S'?'selected':''}>C.S</option></select>
+                    <div class="two-col">
+                        <div><label class="flabel">Age</label><input class="og-input p-age" type="number" min="0" value="${esc(e.age)}" onchange="syncPEntry(${i})"></div>
+                        <div><label class="flabel">Gender</label><select class="og-input p-gender" onchange="syncPEntry(${i})"><option value="">-- Select --</option><option ${e.gender==='Boy'?'selected':''}>Boy</option><option ${e.gender==='Girl'?'selected':''}>Girl</option></select></div>
+                    </div>
+                    <div class="two-col">
+                        <div><label class="flabel">Hospital</label><input class="og-input p-hospital" value="${esc(e.hospital)}" onchange="syncPEntry(${i})"></div>
+                        <div><label class="flabel">NUM</label><input class="og-input p-num" value="${esc(e.num)}" onchange="syncPEntry(${i})" placeholder="NUM"></div>
+                    </div>
+                    <label class="flabel">Dr Name</label><input class="og-input p-drname" value="${esc(e.drName)}" onchange="syncPEntry(${i})">
+                    <label class="flabel">Complication</label><textarea class="og-ta p-complication" onchange="syncPEntry(${i})">${esc(e.complication)}</textarea>
+                    <label class="flabel">Notes</label><textarea class="og-ta p-notes" onchange="syncPEntry(${i})">${esc(e.notes)}</textarea>
+                </div>`).join('');
+            box.querySelectorAll('.p-type').forEach((el, i) => { el.onchange = () => syncPEntry(i); });
+        }
+
+        function syncPEntry(i) {
+            const card = document.querySelector('#pEntries .gp-entry[data-i="' + i + '"]');
+            if (!card) return;
+            pEntries[i] = {
+                type: card.querySelector('.p-type').value,
+                age: card.querySelector('.p-age').value.trim(),
+                gender: card.querySelector('.p-gender').value,
+                hospital: card.querySelector('.p-hospital').value.trim(),
+                num: card.querySelector('.p-num').value.trim(),
+                drName: card.querySelector('.p-drname').value.trim(),
+                complication: card.querySelector('.p-complication').value.trim(),
+                notes: card.querySelector('.p-notes').value.trim()
+            };
+        }
+
+        function renderAEntries() {
+            const box = $('aEntries');
+            if (!box) return;
+            box.innerHTML = aEntries.map((e, i) => `
+                <div class="gp-entry" data-i="${i}">
+                    <div class="gp-entry-head"><b>A ${i+1}</b>${aEntries.length>1?`<button type="button" class="btn sm red" onclick="removeAEntry(${i})">✖ Remove</button>`:''}</div>
+                    <label class="flabel">Weeks</label><input class="og-input a-weeks" value="${esc(e.weeks)}" onchange="syncAEntry(${i})" placeholder="Weeks">
+                    <label class="flabel">Type</label>
+                    <select class="og-input a-type" onchange="syncAEntry(${i})"><option value="">-- Select --</option><option ${e.type==='Surgical'?'selected':''}>Surgical</option><option ${e.type==='Medical'?'selected':''}>Medical</option></select>
+                    <label class="flabel">Complication</label><textarea class="og-ta a-complication" onchange="syncAEntry(${i})">${esc(e.complication)}</textarea>
+                </div>`).join('');
+        }
+
+        function syncAEntry(i) {
+            const card = document.querySelector('#aEntries .gp-entry[data-i="' + i + '"]');
+            if (!card) return;
+            aEntries[i] = {
+                weeks: card.querySelector('.a-weeks').value.trim(),
+                type: card.querySelector('.a-type').value,
+                complication: card.querySelector('.a-complication').value.trim()
+            };
+        }
+
+        function renderEEntries() {
+            const box = $('eEntries');
+            if (!box) return;
+            box.innerHTML = eEntries.map((e, i) => `
+                <div class="gp-entry" data-i="${i}">
+                    <div class="gp-entry-head"><b>E ${i+1}</b>${eEntries.length>1?`<button type="button" class="btn sm red" onclick="removeEEntry(${i})">✖ Remove</button>`:''}</div>
+                    <label class="flabel">Side</label>
+                    <select class="og-input e-side" onchange="syncEEntry(${i})"><option value="">-- Select --</option><option ${e.side==='Rt'?'selected':''}>Rt</option><option ${e.side==='Left'?'selected':''}>Left</option></select>
+                    <label class="flabel">Treatment</label><input class="og-input e-treatment" value="${esc(e.treatment)}" onchange="syncEEntry(${i})">
+                    <label class="flabel">Notes</label><textarea class="og-ta e-notes" onchange="syncEEntry(${i})">${esc(e.notes)}</textarea>
+                </div>`).join('');
+        }
+
+        function syncEEntry(i) {
+            const card = document.querySelector('#eEntries .gp-entry[data-i="' + i + '"]');
+            if (!card) return;
+            eEntries[i] = {
+                side: card.querySelector('.e-side').value,
+                treatment: card.querySelector('.e-treatment').value.trim(),
+                notes: card.querySelector('.e-notes').value.trim()
+            };
+        }
+
         function ogDefaults() {
             return {
                 menstrual: { regularity: '', cycleDays: '', durationDays: '' },
-                obstetric: { deliveries: '', normalOn: false, normalCount: '', csOn: false, csCount: '', notes: '' },
+                obstetric: {
+                    g: '',
+                    p: [],
+                    l: '',
+                    d: '',
+                    a: [],
+                    e: []
+                },
                 pastMedical: '',
                 pastSurgical: '',
                 infertility: { laparoscopeOn: false, laparoscope: '', hystroscopeOn: false, hystroscope: '',
@@ -3150,11 +3360,21 @@ function enableBulletList(el) {
             };
         }
 
-        // Older records stored obstetric / investigations as plain strings. Fold them into the
-        // new shapes so nothing that was already typed in is lost.
+        // Older records stored obstetric / investigations as plain strings or single P/A/E objects.
+        // Fold them into the new shapes so nothing that was already typed in is lost.
         function migrateOg(og, d) {
             if (typeof og.obstetric === 'string') og.obstetric = { ...d.obstetric, notes: og.obstetric };
             else og.obstetric = { ...d.obstetric, ...(og.obstetric || {}) };
+            // P/A/E used to be single objects — wrap them into a one-item array if so.
+            ['p', 'a', 'e'].forEach(letter => {
+                const val = og.obstetric[letter];
+                if (Array.isArray(val)) { og.obstetric[letter] = val; } else if (val && typeof val === 'object' && Object
+                    .keys(val).some(k => val[k])) { og.obstetric[letter] = [val]; } else { og.obstetric[letter] = [];
+                }
+            });
+            og.obstetric.p = og.obstetric.p.map(e => ({ ...emptyPEntry(), ...e }));
+            og.obstetric.a = og.obstetric.a.map(e => ({ ...emptyAEntry(), ...e }));
+            og.obstetric.e = og.obstetric.e.map(e => ({ ...emptyEEntry(), ...e }));
 
             const inv = { ...d.investigations, ...(og.investigations || {}) };
             const legacyBits = [];
@@ -3199,14 +3419,31 @@ function enableBulletList(el) {
             $('og_cycleDays').value = og.menstrual.cycleDays || '';
             $('og_durationDays').value = og.menstrual.durationDays || '';
 
-            $('og_deliveriesCount').value = og.obstetric.deliveries || '';
-            $('og_delNormalOn').checked = !!og.obstetric.normalOn;
-            $('og_delNormalCount').value = og.obstetric.normalCount || '';
-            toggleWrap('og_delNormalWrap', !!og.obstetric.normalOn);
-            $('og_delCsOn').checked = !!og.obstetric.csOn;
-            $('og_delCsCount').value = og.obstetric.csCount || '';
-            toggleWrap('og_delCsWrap', !!og.obstetric.csOn);
-            $('og_obstetricNotes').value = og.obstetric.notes || '';
+            $('og_ob_g').value = og.obstetric.g || '';
+            pEntries = og.obstetric.p.length ? og.obstetric.p.map(e => ({ ...e })) : [emptyPEntry()];
+            renderPEntries();
+            $('og_ob_l').value = og.obstetric.l || '';
+            $('og_ob_d').value = og.obstetric.d || '';
+            aEntries = og.obstetric.a.length ? og.obstetric.a.map(e => ({ ...e })) : [emptyAEntry()];
+            renderAEntries();
+            eEntries = og.obstetric.e.length ? og.obstetric.e.map(e => ({ ...e })) : [emptyEEntry()];
+            renderEEntries();
+            // Reveal any GPLADE panel that already has saved data, and keep its button in sync.
+            ['G', 'P', 'L', 'D', 'A', 'E'].forEach(letter => {
+                const hasData = (
+                    (letter === 'G' && og.obstetric.g) ||
+                    (letter === 'P' && og.obstetric.p.length) ||
+                    (letter === 'L' && og.obstetric.l) ||
+                    (letter === 'D' && og.obstetric.d) ||
+                    (letter === 'A' && og.obstetric.a.length) ||
+                    (letter === 'E' && og.obstetric.e.length)
+                );
+                const el = $('gplade_' + letter);
+                if (el) el.style.display = hasData ? 'block' : 'none';
+                const btn = document.querySelector('.gplade-btn[data-letter="' + letter + '"]');
+                if (btn) { btn.classList.toggle('primary', !!hasData);
+                    btn.classList.toggle('gray', !hasData); }
+            });
 
             $('og_pastMedical').value = og.pastMedical || '';
             $('og_pastSurgical').value = og.pastSurgical || '';
@@ -3261,16 +3498,24 @@ function enableBulletList(el) {
 
         function saveOgHistory() {
             if (!filePatient) return;
+            // Sync any entry whose field was blurred but not yet copied into the arrays.
+            pEntries.forEach((_, i) => syncPEntry(i));
+            aEntries.forEach((_, i) => syncAEntry(i));
+            eEntries.forEach((_, i) => syncEEntry(i));
+            const cleanP = pEntries.filter(e => e.type || e.age || e.gender || e.hospital || e.num || e.drName || e
+                .complication || e.notes);
+            const cleanA = aEntries.filter(e => e.weeks || e.type || e.complication);
+            const cleanE = eEntries.filter(e => e.side || e.treatment || e.notes);
             const ogHistory = {
                 menstrual: { regularity: $('og_menstrualRegularity').value, cycleDays: $('og_cycleDays').value
                         .trim(), durationDays: $('og_durationDays').value.trim() },
                 obstetric: {
-                    deliveries: $('og_deliveriesCount').value.trim(),
-                    normalOn: $('og_delNormalOn').checked,
-                    normalCount: $('og_delNormalOn').checked ? $('og_delNormalCount').value.trim() : '',
-                    csOn: $('og_delCsOn').checked,
-                    csCount: $('og_delCsOn').checked ? $('og_delCsCount').value.trim() : '',
-                    notes: $('og_obstetricNotes').value.trim()
+                    g: $('og_ob_g').value.trim(),
+                    p: cleanP,
+                    l: $('og_ob_l').value.trim(),
+                    d: $('og_ob_d').value.trim(),
+                    a: cleanA,
+                    e: cleanE
                 },
                 pastMedical: $('og_pastMedical').value.trim(),
                 pastSurgical: $('og_pastSurgical').value.trim(),
@@ -3315,44 +3560,114 @@ function enableBulletList(el) {
             toast('✅ History saved');
         }
 
-        function renderLabRows() { $('labRows').innerHTML = '';
-            addLabRow(); }
-
-        function addLabRow(l, editingId) {
-            l = l || { testName: '', result: '', notes: '' };
-            const div = document.createElement('div');
-            div.className = 'lab-row';
-            if (editingId) div.dataset.editingId = editingId;
-            div.innerHTML =
-                `<input class="lab-test" placeholder="e.g. CBC" value="${esc(l.testName)}"><input class="lab-result" placeholder="Result" value="${esc(l.result)}"><input class="lab-note" placeholder="Notes" value="${esc(l.notes)}"><input class="lab-date" type="date" value="${esc(l.date||todayStr())}"><button class="btn ${editingId?'blue':'primary'} sm" style="padding:6px 0">${editingId?'✔':'💾'}</button>`;
-            div.querySelector('button').onclick = () => saveLabRow(div);
-            attachAC(div.querySelector('.lab-test'), candLabTests);
-            $('labRows').appendChild(div);
-        }
-
-        function saveLabRow(div) {
-            const testName = div.querySelector('.lab-test').value.trim(),
-                result = div.querySelector('.lab-result').value.trim(),
-                notes = div.querySelector('.lab-note').value.trim(),
-                date = div.querySelector('.lab-date').value || todayStr();
-            if (!testName || !result) { toast('Enter test name and result'); return; }
-            const editingId = div.dataset.editingId;
-            const rec = { id: editingId || uid(), patientId: filePatient.id, testName, result, notes, date, ts: editingId ?
-                    (data.labResults.find(x => x.id === editingId) || {}).ts || Date.now() : Date.now() };
-            dbPut('labResults', rec);
-            toast(editingId ? '✔ Updated' : 'Saved');
-            div.remove();
-            addLabRow();
-            renderLabHistory();
-        }
-
-        function editLabRow(id) { const l = (data.labResults || []).find(x => x.id === id); if (!l) return;
-            $('labRows').innerHTML = '';
-            addLabRow(l, id);
-            toast('✏️ Edit then press ✔'); }
-
+        // ===== LAB RESULTS: checklist-driven entry ("Go" flow) =====
         function candLabTests() { const s = new Set();
             data.labResults.forEach(l => { if (l.testName) s.add(l.testName); }); return [...s]; }
+
+        function getCheckedInvLabs() { return [...document.querySelectorAll('#invLabsChecklist input:checked')].map(i => i
+                .value); }
+
+        function renderInvLabsChecklist(selected) {
+            selected = selected || getCheckedInvLabs();
+            const box = $('invLabsChecklist');
+            if (!box) return;
+            const list = data.settings.rxLabTests || [];
+            box.innerHTML = list.map(name => {
+                const on = selected.includes(name);
+                return `<div class="check-item ${on?'checked':''}" style="justify-content:space-between"><label style="display:flex;align-items:center;gap:7px;cursor:pointer;flex:1"><input type="checkbox" value="${esc(name)}" ${on?'checked':''} onchange="this.closest('.check-item').classList.toggle('checked',this.checked)">${esc(name)}</label></div>`;
+            }).join('') || '<div style="color:#94a3b8;font-size:13px">No tests — add one above</div>';
+        }
+
+        // Adding a new test name here also feeds the prescription's lab checklist (shared settings list).
+        async function addInvLabTest() {
+            const inp = $('newInvLabTest');
+            const v = inp.value.trim();
+            if (!v) return;
+            const list = data.settings.rxLabTests || [];
+            if (list.includes(v)) { toast('⚠ Already exists'); return; }
+            const selected = getCheckedInvLabs();
+            list.push(v);
+            await saveSetting('rxLabTests', list);
+            inp.value = '';
+            renderInvLabsChecklist([...selected, v]);
+        }
+
+        // "Go": open one result+unit row per selected test.
+        function openInvLabsGoForm() {
+            const selected = getCheckedInvLabs();
+            const box = $('invLabsGoForm');
+            if (!selected.length) { box.innerHTML = '';
+                toast('⚠ Tick at least one test first'); return; }
+            box.innerHTML = `<div style="font-weight:700;color:#7e22ce;margin-bottom:6px;font-size:13.5px">Enter result &amp; unit for each test:</div>` +
+                selected.map(name => `
+                    <div class="lab-go-item" data-test="${esc(name)}">
+                        <span class="lab-go-name">🧪 ${esc(name)}</span>
+                        <div class="lab-go-row">
+                            <input class="lab-go-result" placeholder="Result">
+                            <input class="lab-go-unit" placeholder="Unit (e.g. mg/dL)">
+                        </div>
+                    </div>`).join('') +
+                `<div class="toolbar" style="margin-top:8px"><button class="btn primary sm" type="button" onclick="saveInvLabsGoForm()">💾 Save Results</button></div>`;
+        }
+
+        function saveInvLabsGoForm() {
+            if (!filePatient) return;
+            const items = [...document.querySelectorAll('#invLabsGoForm .lab-go-item')];
+            if (!items.length) return;
+            let saved = 0;
+            items.forEach(box => {
+                const testName = box.dataset.test;
+                const result = box.querySelector('.lab-go-result').value.trim();
+                const unit = box.querySelector('.lab-go-unit').value.trim();
+                if (!result) return;
+                const notes = unit ? ('Unit: ' + unit) : '';
+                dbPut('labResults', { id: uid(), patientId: filePatient.id, testName, result, notes,
+                    date: todayStr(), ts: Date.now() });
+                saved++;
+            });
+            if (saved) { toast('💾 Saved ' + saved + ' result' + (saved !== 1 ? 's' : ''));
+                $('invLabsGoForm').innerHTML = '';
+                document.querySelectorAll('#invLabsChecklist input:checked').forEach(i => { i.checked = false;
+                    i.closest('.check-item').classList.remove('checked'); });
+                renderVisitHistory(); } else toast('⚠ Enter at least one result');
+        }
+
+        function renderLabRows() { renderInvLabsChecklist([]);
+            $('invLabsGoForm').innerHTML = '';
+            $('labRows').innerHTML = ''; }
+
+        function editLabRow(id) {
+            const l = (data.labResults || []).find(x => x.id === id);
+            if (!l) return;
+            const unitMatch = /^Unit:\s*(.*)$/i.exec((l.notes || '').trim());
+            const unit = unitMatch ? unitMatch[1] : '';
+            renderInvLabsChecklist([l.testName]);
+            $('invLabsGoForm').innerHTML = `
+                <div style="font-weight:700;color:#7e22ce;margin-bottom:6px;font-size:13.5px">Edit result:</div>
+                <div class="lab-go-item" data-edit-id="${l.id}" data-test="${esc(l.testName)}">
+                    <span class="lab-go-name">🧪 ${esc(l.testName)}</span>
+                    <div class="lab-go-row">
+                        <input class="lab-go-result" placeholder="Result" value="${esc(l.result)}">
+                        <input class="lab-go-unit" placeholder="Unit (e.g. mg/dL)" value="${esc(unit)}">
+                    </div>
+                </div>
+                <div class="toolbar" style="margin-top:8px"><button class="btn blue sm" type="button" onclick="saveEditedLabRow('${l.id}')">✔ Update</button></div>`;
+            toast('✏️ Edit then press Update');
+        }
+
+        function saveEditedLabRow(id) {
+            const box = document.querySelector('#invLabsGoForm .lab-go-item[data-edit-id="' + id + '"]');
+            if (!box) return;
+            const l = data.labResults.find(x => x.id === id);
+            if (!l) return;
+            const result = box.querySelector('.lab-go-result').value.trim();
+            const unit = box.querySelector('.lab-go-unit').value.trim();
+            if (!result) { toast('Enter a result'); return; }
+            dbPut('labResults', { ...l, result, notes: unit ? ('Unit: ' + unit) : '' });
+            toast('✔ Updated');
+            $('invLabsGoForm').innerHTML = '';
+            renderVisitHistory();
+        }
 
         function renderLabHistory() { renderVisitHistory(); }
 
@@ -3376,6 +3691,13 @@ function enableBulletList(el) {
         function toggleVisitGroup(key) { openVisitKeys[key] = !openVisitKeys[key];
             renderVisitHistory(); }
 
+        // A lab result's "notes" field carries "Unit: X" when a unit was entered via the Go flow —
+        // split that back out for display so Result and Unit render as separate columns.
+        function splitLabNotes(notes) {
+            const m = /^Unit:\s*(.*)$/i.exec((notes || '').trim());
+            return m ? { unit: m[1], note: '' } : { unit: '', note: notes || '' };
+        }
+
         function renderVisitHistory() {
             if (!filePatient) return;
             const box = $('visitHistory');
@@ -3397,9 +3719,9 @@ function enableBulletList(el) {
                                     <span onclick="event.stopPropagation();"><button class="btn sm blue" onclick="viewRx('${r.id}')" title="View">👁 View</button> <button class="btn sm gray" onclick="loadRxInto('${r.id}')" title="Edit">✏️</button> <button class="btn sm blue" onclick="printRx('${r.id}')" title="Print">🖨</button> <button class="btn sm red" onclick="event.stopPropagation();delRxFrom('${r.id}')" title="Delete">🗑</button></span>
                                 </div>`).join(''):''}
                                 ${g.labs.length?`<b style="font-size:13px;display:block;margin-top:8px">🧪 Lab Results</b>
-                                    <table class="lab-table" style="margin-top:6px"><thead><tr><th>Test</th><th>Result</th><th>Notes</th><th></th></tr></thead><tbody>
-                                    ${g.labs.map(l=>`<tr><td><b>${esc(l.testName)}</b></td><td>${esc(l.result)}</td><td>${esc(l.notes||'')}</td>
-                                        <td><button class="btn sm blue" onclick="editLabRow('${l.id}')">✏️</button> <button class="btn sm red" onclick="delLab('${l.id}')">🗑</button></td></tr>`).join('')}
+                                    <table class="lab-table" style="margin-top:6px"><thead><tr><th>Test</th><th>Result</th><th>Unit</th><th></th></tr></thead><tbody>
+                                    ${g.labs.map(l=>{const sp=splitLabNotes(l.notes);return `<tr><td><b>${esc(l.testName)}</b></td><td>${esc(l.result)}</td><td>${esc(sp.unit||sp.note||'')}</td>
+                                        <td><button class="btn sm blue" onclick="editLabRow('${l.id}')">✏️</button> <button class="btn sm red" onclick="delLab('${l.id}')">🗑</button></td></tr>`;}).join('')}
                                     </tbody></table>`:''}
                             </div>`:''}</div>`;
             }).join('');
@@ -3519,18 +3841,19 @@ function enableBulletList(el) {
 
             // O&G
             const semen = og.investigations.semen || {};
-            const delTypes = [];
-            if (og.obstetric.normalOn) delTypes.push('Normal Delivery' + (og.obstetric.normalCount ? ' × ' + og
-                .obstetric.normalCount : ''));
-            if (og.obstetric.csOn) delTypes.push('Cesarean Section' + (og.obstetric.csCount ? ' × ' + og.obstetric
-                .csCount : ''));
+            const obG = og.obstetric.g;
+            const pList = og.obstetric.p || [];
+            const aList = og.obstetric.a || [];
+            const eList = og.obstetric.e || [];
+            const obL = og.obstetric.l;
+            const obD = og.obstetric.d;
             const ogFields = [
                 ['Menstrual Regularity', og.menstrual.regularity],
                 ['Cycle (days)', og.menstrual.cycleDays],
                 ['Duration (days)', og.menstrual.durationDays],
-                ['Number of deliveries', og.obstetric.deliveries],
-                ['Type of deliveries', delTypes.join(' | ')],
-                ['Obstetric Notes', og.obstetric.notes],
+                ['G', obG],
+                ['L', obL],
+                ['D', obD],
                 ['Past Medical', og.pastMedical],
                 ['Past Surgical', og.pastSurgical],
                 ['Laparoscope', og.infertility.laparoscope],
@@ -3558,12 +3881,13 @@ function enableBulletList(el) {
                 ['Pelvis', og.examination.pelvis],
                 ['Other Exam', og.examination.other],
                 ['Impression', og.impression],
-                ['Wt', og.management.weightReduction],
+                ['Wt Reduction', og.management.weightReduction],
                 ['Management Labs', og.management.labs],
                 ['Vitamins / Drugs', og.management.vitamins],
                 ['Treatment Plan', og.management.treatmentPlan]
             ];
-            const hasOg = ogFields.some(([_, v]) => v && String(v).trim());
+            const hasOg = ogFields.some(([_, v]) => v && String(v).trim()) || pList.length || aList.length || eList
+                .length;
             if (hasOg) {
                 html += `<div style="margin:12px 0;padding:12px;background:#eef2ff;border-radius:8px;border:1px solid #c7d2fe">`;
                 html += `<h4 style="color:#7e22ce;margin-bottom:8px">🩺 History</h4>`;
@@ -3572,17 +3896,41 @@ function enableBulletList(el) {
                         html += `<div style="white-space:pre-wrap"><strong>${label}:</strong> ${esc(val)}</div>`;
                     }
                 });
+                pList.forEach((p, i) => {
+                    if (!(p.type || p.age || p.gender || p.hospital || p.num || p.drName || p.complication || p
+                            .notes)) return;
+                    html += `<div style="margin-top:6px;padding:8px;background:#fff;border-radius:6px;border:1px solid #e2e8f0">`;
+                    html += `<b style="color:#9d174d">P${pList.length>1?' #'+(i+1):''}:</b> ${esc(p.type||'')}`;
+                    if (p.age) html += ` — Age: ${esc(p.age)}`;
+                    if (p.gender) html += ` — ${esc(p.gender)}`;
+                    if (p.hospital) html += ` — Hospital: <b>${esc(p.hospital)}</b>`;
+                    if (p.num) html += ` — NUM: ${esc(p.num)}`;
+                    if (p.drName) html += ` — Dr. ${esc(p.drName)}`;
+                    html += `</div>`;
+                    if (p.complication) html += `<div style="white-space:pre-wrap;margin-left:6px"><strong>Complication:</strong> ${esc(p.complication)}</div>`;
+                    if (p.notes) html += `<div style="white-space:pre-wrap;margin-left:6px"><strong>Notes:</strong> ${esc(p.notes)}</div>`;
+                });
+                aList.forEach((a, i) => {
+                    if (!(a.weeks || a.type || a.complication)) return;
+                    html += `<div style="white-space:pre-wrap"><strong>A${aList.length>1?' #'+(i+1):''}:</strong> ${a.weeks?'Weeks: '+esc(a.weeks)+' ':''}${esc(a.type||'')}${a.complication?' — Complication: '+esc(a.complication):''}</div>`;
+                });
+                eList.forEach((e, i) => {
+                    if (!(e.side || e.treatment || e.notes)) return;
+                    html += `<div style="white-space:pre-wrap"><strong>E${eList.length>1?' #'+(i+1):''}:</strong> ${esc(e.side||'')}${e.treatment?' — Treatment: '+esc(e.treatment):''}${e.notes?' — '+esc(e.notes):''}</div>`;
+                });
                 html += `</div>`;
             }
 
-            // Labs
-            if (labs.length) {
+            // Labs — any test whose result is "NO" is hidden from this view.
+            const visibleLabs = labs.filter(l => String(l.result || '').trim().toUpperCase() !== 'NO');
+            if (visibleLabs.length) {
                 html += `<div style="margin:12px 0"><h4 style="color:#7e22ce;margin-bottom:6px">🧪 Lab Results</h4><table style="width:100%;font-size:13px;border-collapse:collapse">`;
                 html +=
-                    `<thead><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">Test</th><th style="padding:6px;text-align:left">Result</th><th style="padding:6px;text-align:left">Notes</th><th style="padding:6px;text-align:left">Date</th></tr></thead><tbody>`;
-                labs.forEach(l => {
+                    `<thead><tr style="background:#f1f5f9"><th style="padding:6px;text-align:left">Test</th><th style="padding:6px;text-align:left">Result</th><th style="padding:6px;text-align:left">Unit</th><th style="padding:6px;text-align:left">Date</th></tr></thead><tbody>`;
+                visibleLabs.forEach(l => {
+                    const sp = splitLabNotes(l.notes);
                     html +=
-                        `<tr><td style="padding:6px;border-bottom:1px solid #e2e8f0">${esc(l.testName)}</td><td style="padding:6px;border-bottom:1px solid #e2e8f0"><strong>${esc(l.result)}</strong></td><td style="padding:6px;border-bottom:1px solid #e2e8f0">${esc(l.notes||'')}</td><td style="padding:6px;border-bottom:1px solid #e2e8f0">${esc(l.date||'')}</td></tr>`;
+                        `<tr><td style="padding:6px;border-bottom:1px solid #e2e8f0">${esc(l.testName)}</td><td style="padding:6px;border-bottom:1px solid #e2e8f0"><strong>${esc(l.result)}</strong></td><td style="padding:6px;border-bottom:1px solid #e2e8f0">${esc(sp.unit||sp.note||'')}</td><td style="padding:6px;border-bottom:1px solid #e2e8f0">${esc(l.date||'')}</td></tr>`;
                 });
                 html += `</tbody></table></div>`;
             }
@@ -4511,7 +4859,11 @@ th {
             const ogManagement = og.management;
             const ogSemen = ogInvestigations.semen || {};
 
-            const hasObstetric = ogObstetric.deliveries || ogObstetric.normalOn || ogObstetric.csOn || ogObstetric.notes;
+            const pList = ogObstetric.p || [];
+            const aList = ogObstetric.a || [];
+            const eList = ogObstetric.e || [];
+            const hasObstetric = ogObstetric.g || pList.length || ogObstetric.l || ogObstetric.d || aList.length ||
+                eList.length;
             const hasSemen = ogInvestigations.semenOn && (ogSemen.date || ogSemen.labName || ogSemen.volume ||
                 ogSemen.count || ogSemen.progressive || ogSemen.normal);
             const hasOgContent =
@@ -4533,8 +4885,8 @@ th {
                 `<div style="margin:15px 0;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px">
                     <div style="font-weight:bold;color:#15803d;margin-bottom:8px;font-size:15px">🧪 Lab Results — ${g.date==='N/A'?'No date':fmtDate(g.date)}</div>
                     <table style="width:100%;font-size:13px;border-collapse:collapse">
-                        <thead><tr style="background:#dcfce7"><th style="padding:8px;text-align:left;border:1px solid #bbf7d0">Test</th><th style="padding:8px;text-align:left;border:1px solid #bbf7d0">Result</th><th style="padding:8px;text-align:left;border:1px solid #bbf7d0">Notes</th></tr></thead>
-                        <tbody>${g.labs.map(l=>`<tr><td style="padding:8px;border:1px solid #e2e8f0">${esc(l.testName)}</td><td style="padding:8px;border:1px solid #e2e8f0"><strong>${esc(l.result)}</strong></td><td style="padding:8px;border:1px solid #e2e8f0">${esc(l.notes||'')}</td></tr>`).join('')}</tbody>
+                        <thead><tr style="background:#dcfce7"><th style="padding:8px;text-align:left;border:1px solid #bbf7d0">Test</th><th style="padding:8px;text-align:left;border:1px solid #bbf7d0">Result</th><th style="padding:8px;text-align:left;border:1px solid #bbf7d0">Unit</th></tr></thead>
+                        <tbody>${g.labs.map(l=>{const sp=splitLabNotes(l.notes);return `<tr><td style="padding:8px;border:1px solid #e2e8f0">${esc(l.testName)}</td><td style="padding:8px;border:1px solid #e2e8f0"><strong>${esc(l.result)}</strong></td><td style="padding:8px;border:1px solid #e2e8f0">${esc(sp.unit||sp.note||'')}</td></tr>`;}).join('')}</tbody>
                     </table>
                 </div>`
             ).join('');
@@ -4555,21 +4907,37 @@ th {
                     `);
                 }
                 if (hasObstetric) {
-                    const typeBits = [];
-                    if (ogObstetric.normalOn) typeBits.push('Normal Delivery' + (ogObstetric.normalCount ? ' × ' +
-                        ogObstetric.normalCount : ''));
-                    if (ogObstetric.csOn) typeBits.push('Cesarean Section' + (ogObstetric.csCount ? ' × ' +
-                        ogObstetric.csCount : ''));
-                    ogParts.push(`
-                        <div style="margin-bottom:12px">
-                            <h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🤰 Obstetric History</h4>
-                            <div style="font-size:14px;line-height:2">
-                                ${ogObstetric.deliveries?`<div><strong>Number of deliveries:</strong> ${esc(ogObstetric.deliveries)}</div>`:''}
-                                ${typeBits.length?`<div><strong>Type of deliveries:</strong> ${esc(typeBits.join(' &nbsp;|&nbsp; '))}</div>`:''}
-                            </div>
-                            ${ogObstetric.notes?`<div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px;margin-top:6px">${esc(ogObstetric.notes)}</div>`:''}
-                        </div>
-                    `);
+                    let obHtml =
+                        `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🤰 Obstetric History (G P L D A E)</h4><div style="font-size:14px;line-height:1.9">`;
+                    if (ogObstetric.g) obHtml += `<div><strong>G:</strong> ${esc(ogObstetric.g)}</div>`;
+                    pList.forEach((obP, i) => {
+                        if (!(obP.type || obP.age || obP.gender || obP.hospital || obP.num || obP.drName || obP
+                                .complication || obP.notes)) return;
+                        obHtml +=
+                            `<div><strong>P${pList.length>1?' #'+(i+1):''}:</strong> ${esc(obP.type||'')}${obP.age?' — Age: '+esc(obP.age):''}${obP.gender?' — '+esc(obP.gender):''}${obP.hospital?' — Hospital: <b>'+esc(obP.hospital)+'</b>':''}${obP.num?' — NUM: '+esc(obP.num):''}${obP.drName?' — Dr. '+esc(obP.drName):''}</div>`;
+                        if (obP.complication) obHtml +=
+                            `<div style="white-space:pre-wrap"><strong>P${pList.length>1?' #'+(i+1):''} — Complication:</strong> ${esc(obP.complication)}</div>`;
+                        if (obP.notes) obHtml +=
+                            `<div style="white-space:pre-wrap"><strong>P${pList.length>1?' #'+(i+1):''} — Notes:</strong> ${esc(obP.notes)}</div>`;
+                    });
+                    if (ogObstetric.l) obHtml +=
+                        `<div style="white-space:pre-wrap"><strong>L:</strong> ${esc(ogObstetric.l)}</div>`;
+                    if (ogObstetric.d) obHtml +=
+                        `<div style="white-space:pre-wrap"><strong>D:</strong> ${esc(ogObstetric.d)}</div>`;
+                    aList.forEach((obA, i) => {
+                        if (!(obA.weeks || obA.type || obA.complication)) return;
+                        obHtml += `<div><strong>A${aList.length>1?' #'+(i+1):''}:</strong>${obA.weeks?' Weeks: '+esc(obA.weeks):''}${obA.type?' — '+esc(obA.type):''}</div>`;
+                        if (obA.complication) obHtml +=
+                            `<div style="white-space:pre-wrap"><strong>A${aList.length>1?' #'+(i+1):''} — Complication:</strong> ${esc(obA.complication)}</div>`;
+                    });
+                    eList.forEach((obE, i) => {
+                        if (!(obE.side || obE.treatment || obE.notes)) return;
+                        obHtml += `<div><strong>E${eList.length>1?' #'+(i+1):''}:</strong>${obE.side?' '+esc(obE.side):''}${obE.treatment?' — Treatment: '+esc(obE.treatment):''}</div>`;
+                        if (obE.notes) obHtml +=
+                            `<div style="white-space:pre-wrap"><strong>E${eList.length>1?' #'+(i+1):''} — Notes:</strong> ${esc(obE.notes)}</div>`;
+                    });
+                    obHtml += `</div></div>`;
+                    ogParts.push(obHtml);
                 }
                 if (og.pastMedical) ogParts.push(
                     `<div style="margin-bottom:12px"><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">🏥 Past History — Medical</h4><div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px">${esc(og.pastMedical)}</div></div>`
@@ -4666,7 +5034,7 @@ th {
                     .treatmentPlan) {
                     let mgmtHtml = `<div><h4 style="color:#7e22ce;margin:10px 0 8px 0;font-size:16px">💊 Management</h4>`;
                     if (ogManagement.weightReduction) mgmtHtml +=
-                        `<div style="font-size:14px;margin-bottom:8px"><strong>Wt:</strong> ${esc(ogManagement.weightReduction)}</div>`;
+                        `<div style="font-size:14px;margin-bottom:8px"><strong>Wt Reduction:</strong> ${esc(ogManagement.weightReduction)}</div>`;
                     if (ogManagement.labs) mgmtHtml +=
                         `<div style="font-size:14px;white-space:pre-wrap;background:#f8fafc;padding:10px;border-radius:6px;margin-bottom:8px"><strong>Labs:</strong> ${esc(ogManagement.labs)}</div>`;
                     if (ogManagement.vitamins) mgmtHtml +=
@@ -4928,7 +5296,10 @@ th {
             $('pfOpenRx').onclick = () => { if (filePatient) openRx(filePatient.id); };
             $('pfSaveFileBtn').onclick = saveMedicalFile;
             $('pfPrintFileBtn').onclick = printPatientFile;
-            $('labAddRowBtn').onclick = () => addLabRow();
+            $('addInvLabTestBtn').onclick = addInvLabTest;
+            $('newInvLabTest').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault();
+                    addInvLabTest(); } });
+            $('invLabsGoBtn').onclick = openInvLabsGoForm;
             $('saveNameBtn').onclick = saveMyName;
             $('sendBtn').onclick = sendMsg;
             $('msgInput').addEventListener('keydown', e => { if (e.key === 'Enter') sendMsg(); });
