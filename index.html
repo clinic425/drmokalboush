@@ -1628,10 +1628,10 @@
                                     <div class="acc-head" onclick="toggleAcc('accMarital')">
                                         <h4>💍 Marital Status</h4><span class="acc-ic" id="ic-accMarital">▾</span>
                                     </div>
-                                    <div class="acc-body" id="accMarital" style="display:none">
-                                        <label class="flabel">Marital Status</label>
-                                        <select id="pd_maritalStatus" class="og-input"><option value="">-- Select --</option><option>Virgin</option><option>Married</option><option>Divorced</option><option>Widow</option></select>
-                                        <label class="flabel">First Marriage?</label>
+                                   <div class="acc-body" id="accMarital" style="display:none">
+<label class="flabel">Marital Status</label>
+<select id="pd_maritalStatus" class="og-input"><option value="">-- Select --</option><option>Virgin</option><option>Married</option><option>Divorced</option><option>Widow</option></select>
+<label class="flabel">First Marriage?</label>
                                         <select id="pd_isFirstMarriage" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
                                         <div id="pd_offspringWrap" class="cond-box" style="display:none">
                                             <label class="flabel">Offspring?</label>
@@ -2377,7 +2377,7 @@
         called_at: p.calledAt || null,
         marital_status: p.maritalStatus || '',
         is_first_marriage: p.isFirstMarriage || '',
-        married_years: p.marriedYears ? +p.marriedYears : null,
+        married_for: (p.marriedfor === undefined || p.marriedfor === null || p.marriedfor === '') ? null : String(p.marriedfor),
         has_children: p.hasChildren || '',
         children_count: p.childrenCount ? +p.childrenCount : null,
         delivery_type: p.deliveryType || '',
@@ -3113,10 +3113,10 @@ toast('📤 Exported');
                 ' input:checked')].map(i => i.value); }
 
         // ===== PERSONAL DETAILS (moved here from the reception page) =====
-        const PD_FIELDS = ['maritalStatus', 'isFirstMarriage', 'hasChildren', 'childrenCount', 'husbandName',
-            'husbandAge', 'husbandJob', 'husbandSmoker', 'husbandDiseased', 'husbandDiseaseText',
-            'husbandFirstMarriage', 'husbandOffspring', 'husbandOffspringCount'
-        ];
+        const PD_FIELDS = ['maritalStatus', 'isFirstMarriage', 'marriedfor', 'hasChildren', 'childrenCount', 'husbandName',
+'husbandAge', 'husbandJob', 'husbandSmoker', 'husbandDiseased', 'husbandDiseaseText',
+'husbandFirstMarriage', 'husbandOffspring', 'husbandOffspringCount'
+];
 
         function renderPfIdentity() {
             if (!filePatient) return;
@@ -4275,18 +4275,19 @@ function enableBulletList(el) {
             localStorage.setItem(LS_NAME, myName); if (online && ch) ch.track({ clientId, name: myName || 'Unknown' });
             toast('✅ Saved'); }
 
-        function renderSettings() {
-            $('clinicName').value = data.settings.clinicName || '';
-            $('examPrice').value = data.settings.examPrice || 0;
-            $('followupPrice').value = data.settings.followupPrice || 0;
-            ['visitPurposes', 'sources', 'rxLabTests'].forEach(k => {
-                $('list-' + k).innerHTML = (data.settings[k] || []).map((v, i) =>
-                    `<li>${esc(v)}<button onclick="delSetting('${k}',${i})">✖</button></li>`).join('') ||
-                    '<li style="color:#94a3b8">Empty</li>';
-            });
-            renderUsersMgmt();
-            renderPrintOrder();
-        }
+       function renderSettings() {
+$('clinicName').value = data.settings.clinicName || '';
+$('examPrice').value = data.settings.examPrice || 0;
+$('followupPrice').value = data.settings.followupPrice || 0;
+['visitPurposes', 'sources'].forEach(k => {
+$('list-' + k).innerHTML = (data.settings[k] || []).map((v, i) =>
+`<li>${esc(v)}<button onclick="delSetting('${k}',${i})">✖</button></li>`).join('') ||
+'<li style="color:#94a3b8">Empty</li>';
+});
+$('list-rxLabTests').innerHTML = '';
+renderUsersMgmt();
+renderPrintOrder();
+}
 
         function renderUsersMgmt() {
             const box = $('usersMgmtList');
@@ -5108,7 +5109,7 @@ th {
                             <div>🥇 دكتوراه امراض النساء والتوليد; </div>
                             <div>🥇زميل مستشفيات فريملي بارك ،انجلترا </div>
                             <div>🥇 عضو و زميل الكلية الملكية لأمراض النساء والتوليد، لندن ،انجلترا</div>
-                            <div>🥇 بلوم الحقن المجهري والإخصاب المساعد، مستشفى برمنجهام، انجلترا </div>
+                            <div>🥇 دبلوم الحقن المجهري والإخصاب المساعد، مستشفى برمنجهام، انجلترا </div>
                         </div>
                     </div>
 
@@ -5121,6 +5122,7 @@ th {
                             <div><strong>Record Date:</strong> ${fmtDate(todayStr())}</div>
                             <div class="full"><strong>Address:</strong> ${esc(p.address||'Not recorded')}</div>
                             <div class="full"><strong>Marital Status:</strong> ${maritalText}</div>
+                            ${p.marriedYears ? `<div class="full"><strong>Married for:</strong> ${esc(p.marriedYears)}</div>` : ''}
                             <div class="full"><strong>How did you know us:</strong> ${esc(sourceText)}</div>
                             <div class="full"><strong>Husband:</strong> ${husbandText}</div>
                         </div>
@@ -5542,5 +5544,124 @@ document.getElementById('importBackupBtn').onclick = importBackup;
             boot();
         });
     </script>
+<script>
+/* ===== PATCH: كل التعديلات بدون لمس الكود الأصلي ===== */
+(function () {
+  // 1) Married for في قائمة الحفظ/القراءة
+  if (typeof PD_FIELDS !== 'undefined' && PD_FIELDS.indexOf('marriedYears') === -1) PD_FIELDS.push('marriedYears');
+
+  // 2) حفظ married_years كنص
+  if (typeof toRow === 'function') {
+    var origToRow = toRow;
+    toRow = function (store, p) {
+      var row = origToRow(store, p);
+      if (store === 'patients') {
+        row.married_years = (p.marriedYears === undefined || p.marriedYears === null || p.marriedYears === '') ? null : String(p.marriedYears);
+      }
+      return row;
+    };
+  }
+
+  // 3) إخفاء قائمة التحاليل من صفحة الإعدادات
+  if (typeof renderSettings === 'function') {
+    var origRS = renderSettings;
+    renderSettings = function () {
+      origRS.apply(this, arguments);
+      var el = document.getElementById('list-rxLabTests');
+      if (el) el.innerHTML = '';
+    };
+  }
+
+  // 4) تعطيل Imaging/Attachments بأمان
+  if (typeof renderPfAttachments === 'function') { renderPfAttachments = function () {}; }
+
+  // 5) رسالة عربية لما تختار حالة قديمة + حالة جديدة بنفس الاسم
+  if (typeof pickPatient === 'function') {
+    var origPick = pickPatient;
+    pickPatient = function (p) {
+      origPick(p);
+      try {
+        var vc = (data.visits || []).filter(function (v) { return v.patientId === p.id; }).length;
+        var banner = document.getElementById('regLinkBanner');
+        if (banner) banner.innerHTML = '👤 دي نفس الحالة القديمة: <b>' + esc(p.name) + '</b> (' + vc + ' زيارة) — كل بياناتها (الاسم، الزوج، العنوان، الوظيفة) ظهرت في الفورم، فاضل بس تدوس 💾 حفظ ' +
+          '<button class="btn sm gray" onclick="unlinkNew()">➕ مش هي — حالة جديدة بنفس الاسم</button> ' +
+          '<button class="btn sm blue" onclick="openPatientFile(\'' + p.id + '\')">📁 فتح الملف</button>';
+      } catch (e) {}
+    };
+  }
+  if (typeof unlinkNew === 'function') {
+    var origUnlink = unlinkNew;
+    unlinkNew = function () { origUnlink(); toast('✅ تمام — هتسجل كحالة جديدة بنفس الاسم، كمّل البيانات ودوس حفظ'); };
+  }
+
+  // 6) حماية البيانات القديمة من المسح عند تحديث حالة موجودة
+  if (typeof saveReception === 'function') {
+    var origSaveRec = saveReception;
+    saveReception = function () {
+      if (!linkedPatientId) { origSaveRec(); return; }
+      var old = data.patients.find(function (x) { return x.id === linkedPatientId; });
+      if (!old) { origSaveRec(); return; }
+      var v = getForm('reg');
+      if (!v.name || !v.age || !v.visitPurpose || !v.visitType) { toast('⚠ Complete all required fields (*)'); return; }
+      dbPut('visits', { id: uid(), patientId: old.id, date: v.date, time: v.time, visitPurpose: v.visitPurpose, visitType: v.visitType, notes: v.notes, ts: Date.now() });
+      var merged = Object.assign({}, old, v, { status: 'Waiting' });
+      ['name','phone','address','husbandName','husbandAge','husbandJob','sourceCategory','sourceSocial','sourceFriendName','sourceDoctorName','sourceStreetDetails','sourceOther'].forEach(function (k) { if (!merged[k] && old[k]) merged[k] = old[k]; });
+      dbPut('patients', merged);
+      toast('✅ نفس الحالة — اتحدث ملفها واتضافت للطابور');
+      resetForm('reg');
+      clearLink();
+    };
+  }
+
+  // 7) حفظ تلقائي لكل خانات Personal Details أثناء الكتابة
+  function silentSavePD() {
+    if (!filePatient) return;
+    var patch = {};
+    PD_FIELDS.forEach(function (k) {
+      var el = document.getElementById('pd_' + k);
+      patch[k] = el ? el.value.trim() : '';
+    });
+    if (patch.isFirstMarriage !== 'No') { patch.hasChildren = ''; patch.childrenCount = ''; }
+    else if (patch.hasChildren !== 'Yes') patch.childrenCount = '';
+    if (patch.husbandDiseased !== 'Yes') patch.husbandDiseaseText = '';
+    if (patch.husbandFirstMarriage !== 'No') { patch.husbandOffspring = ''; patch.husbandOffspringCount = ''; }
+    else if (patch.husbandOffspring !== 'Yes') patch.husbandOffspringCount = '';
+    filePatient = Object.assign({}, filePatient, patch);
+    dbPut('patients', Object.assign({}, filePatient, patch));
+  }
+  var t = null;
+  function onPdEdit(e) {
+    var id = (e.target && e.target.id) ? e.target.id : '';
+    if (id.indexOf('pd_') === 0) { clearTimeout(t); t = setTimeout(silentSavePD, 700); }
+  }
+  document.addEventListener('input', onPdEdit);
+  document.addEventListener('change', onPdEdit);
+
+  // 8) بعد التحميل: إضافة خانة Married for + إزالة كارت الصور + عرض 94%
+  window.addEventListener('load', function () {
+    if (!document.getElementById('pd_marriedYears')) {
+      var sel = document.getElementById('pd_isFirstMarriage');
+      if (sel && sel.previousElementSibling) {
+        var before = sel.previousElementSibling;
+        var lab = document.createElement('label');
+        lab.className = 'flabel';
+        lab.textContent = 'Married for';
+        var inp = document.createElement('input');
+        inp.id = 'pd_marriedYears';
+        inp.className = 'og-input';
+        inp.placeholder = 'Type here...';
+        sel.parentNode.insertBefore(lab, before);
+        sel.parentNode.insertBefore(inp, before);
+      }
+    }
+    var pfInput = document.getElementById('pfFileInput');
+    if (pfInput) { var card = pfInput.closest('.set-card'); if (card) card.remove(); }
+    var grid = document.querySelector('#fileModal .pf-grid');
+    if (grid) grid.style.gridTemplateColumns = '1fr';
+    var box = document.querySelector('#fileModal .modal-box');
+    if (box) box.style.maxWidth = '85%';
+  });
+})();
+</script>
 </body>
 </html>
