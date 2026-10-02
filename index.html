@@ -621,6 +621,17 @@ table{min-width:720px}
 </span>
 </div>
 <div id="pfInfo" style="font-size:13px;color:#64748b;margin-bottom:8px"></div>
+<div id="pfKeyAlarm" style="display:grid;gap:8px;margin-bottom:10px">
+<div style="border:2px solid #7c3aed;border-radius:10px;padding:8px 10px;background:#faf5ff">
+<label class="flabel" style="color:#6d28d9;font-weight:800">🔑 Key</label>
+<textarea id="pf_keyInfo" class="og-ta" rows="2" placeholder="معلومات مهمة عن الحالة..."></textarea>
+</div>
+<div style="border:2px solid #dc2626;border-radius:10px;padding:8px 10px;background:#fef2f2">
+<label class="flabel" style="color:#dc2626;font-weight:800">⚠️ Alarming</label>
+<textarea id="pf_alarming" class="og-ta" rows="2" style="border-color:#dc2626;color:#b91c1c;font-weight:700" placeholder="تحذيرات خطيرة (حساسية، مرض مزمن، حالة حرجة...)"></textarea>
+</div>
+<div><button class="btn sm primary" id="pfKeyAlarmSaveBtn" type="button" onclick="saveKeyAlarm()">💾 حفظ Key / Alarming</button></div>
+</div>
 <div class="pf-grid">
 <div class="set-card">
 <h3>📋 Patient Details & History</h3>
@@ -646,6 +657,12 @@ table{min-width:720px}
 <div id="pd_offspringCountWrap" style="display:none">
 <label class="flabel">Number of offspring</label>
 <input id="pd_childrenCount" type="text" inputmode="numeric" class="og-input">
+<div class="two-col">
+<div><label class="flabel">Number of Females (عدد البنات)</label><input id="pd_childrenFemales" type="text" inputmode="numeric" class="og-input"></div>
+<div><label class="flabel">Number of Males (عدد الأولاد)</label><input id="pd_childrenMales" type="text" inputmode="numeric" class="og-input"></div>
+</div>
+<label class="flabel">Children Names (أسماء الأطفال)</label>
+<input id="pd_childrenNames" class="og-input" placeholder="e.g. Ahmed, Sara, Omar">
 </div>
 </div>
 <label class="flabel">Married for</label>
@@ -916,6 +933,7 @@ table{min-width:720px}
 <h3>📝 زيارة مستقلة — <span id="visitEditPatientName"></span></h3>
 <button class="x" data-close="visitEditModal">✖</button>
 </div>
+<div id="visitEditKA"></div>
 <div id="visitEditArea" class="visit-edit-area">
 <div id="pfVisitSaveTop" style="display:none;position:sticky;top:8px;z-index:100;margin-bottom:12px;padding:10px;background:#fff;border:2px solid #be185d;border-radius:12px;box-shadow:0 6px 18px rgba(190,24,93,.18);align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
 <div style="font-weight:800;color:#be185d">📝 بيانات الزيارة الجديدة</div>
@@ -1803,8 +1821,16 @@ async function ensureDefaultsRemote(){
 const defaults={clinicName:data.settings.clinicName||'',examPrice:data.settings.examPrice||0,followupPrice:data.settings.followupPrice||0,sources:data.settings.sources&&data.settings.sources.length?data.settings.sources:['Facebook','Friends','Another Patient'],visitPurposes:data.settings.visitPurposes&&data.settings.visitPurposes.length?data.settings.visitPurposes:['كشف نسا','متابعة حمل','تاخر حمل'],rxLabTests:data.settings.rxLabTests&&data.settings.rxLabTests.length?data.settings.rxLabTests:['CBC','FSH','LH','Prolactin','Estradiol (E2)','Progesterone','AMH','TSH','Free T4']};
 for(const k of Object.keys(defaults)){if(data.settings[k]===undefined||data.settings[k]===null){data.settings[k]=defaults[k];await sb.from('settings').upsert({key:k,value:defaults[k]});}}
 }
+const PATIENT_EXTRA_KEYS=['childrenFemales','childrenMales','childrenNames','keyInfo','alarming'];
+function __unOg(h){const o={...(h&&typeof h==='object'?h:{})};delete o.__extra;return o;}
+function __exFrom(h){const x=(h&&typeof h==='object'&&h.__extra)||{};const o={};PATIENT_EXTRA_KEYS.forEach(k=>{o[k]=x[k]==null?'':String(x[k]);});return o;}
+function __packOg(p){const o={...(p.ogHistory||{})};const x={};PATIENT_EXTRA_KEYS.forEach(k=>{const v=p[k];if(v!==undefined&&v!==null&&String(v)!=='')x[k]=String(v);});if(Object.keys(x).length)o.__extra=x;else delete o.__extra;return o;}
+async function verifyPatientExtras(id,expected){
+try{const{data:row,error}=await sb.from('patients').select('og_history').eq('id',id).maybeSingle();
+if(error||!row)return false;const got=__exFrom(row.og_history);
+return PATIENT_EXTRA_KEYS.every(k=>String(got[k]||'')===String(expected[k]==null?'':expected[k]));}catch(e){console.error('verify failed',e);return false;}}
 function fromRow(store,r){
-if(store==='patients')return{id:r.id,name:r.name,age:r.age,husbandName:r.husband_name,husbandJob:r.husband_job,phone:r.phone,visitPurpose:r.visit_purpose,visitType:r.visit_type,sourceCategory:r.source_category||'',sourceSocial:r.source_social||'',sourceFriendName:r.source_friend_name||'',sourceDoctorName:r.source_doctor_name||'',sourceStreetDetails:r.source_street_details||'',sourceOther:r.source_other||'',date:r.date,time:r.time?r.time.slice(0,5):'',status:r.status,notes:r.notes,createdAt:r.created_at,calledAt:r.called_at,maritalStatus:r.marital_status||'',isFirstMarriage:r.is_first_marriage||'',marriedYears:r.married_years||'',hasChildren:r.has_children||'',childrenCount:r.children_count,deliveryType:r.delivery_type||'',husbandAge:r.husband_age,husbandSmoker:r.husband_smoker||'',husbandDiseased:r.husband_diseased||'',husbandDiseaseText:r.husband_disease_text||'',ogHistory:r.og_history||{},address:r.address||'',husbandFirstMarriage:r.husband_first_marriage||'',husbandOffspring:r.husband_offspring||'',husbandOffspringCount:r.husband_offspring_count||'',husbandOffspringMales:r.husband_offspring_males||'',husbandOffspringFemales:r.husband_offspring_females||'',husbandOffspringNames:r.husband_offspring_names||''};
+if(store==='patients')return{id:r.id,name:r.name,age:r.age,husbandName:r.husband_name,husbandJob:r.husband_job,phone:r.phone,visitPurpose:r.visit_purpose,visitType:r.visit_type,sourceCategory:r.source_category||'',sourceSocial:r.source_social||'',sourceFriendName:r.source_friend_name||'',sourceDoctorName:r.source_doctor_name||'',sourceStreetDetails:r.source_street_details||'',sourceOther:r.source_other||'',date:r.date,time:r.time?r.time.slice(0,5):'',status:r.status,notes:r.notes,createdAt:r.created_at,calledAt:r.called_at,maritalStatus:r.marital_status||'',isFirstMarriage:r.is_first_marriage||'',marriedYears:r.married_years||'',hasChildren:r.has_children||'',childrenCount:r.children_count,deliveryType:r.delivery_type||'',husbandAge:r.husband_age,husbandSmoker:r.husband_smoker||'',husbandDiseased:r.husband_diseased||'',husbandDiseaseText:r.husband_disease_text||'',ogHistory:__unOg(r.og_history),...__exFrom(r.og_history),address:r.address||'',husbandFirstMarriage:r.husband_first_marriage||'',husbandOffspring:r.husband_offspring||'',husbandOffspringCount:r.husband_offspring_count||'',husbandOffspringMales:r.husband_offspring_males||'',husbandOffspringFemales:r.husband_offspring_females||'',husbandOffspringNames:r.husband_offspring_names||''};
 if(store==='visits')return{id:r.id,patientId:r.patient_id,date:r.date,time:r.time?r.time.slice(0,5):'',visitPurpose:r.visit_purpose,visitType:r.visit_type,notes:r.notes,ts:r.ts};
 if(store==='prescriptions')return{id:r.id,patientId:r.patient_id,patientName:r.patient_name,patientAge:r.patient_age,diagnosis:r.diagnosis,meds:r.meds||[],labs:r.labs||[],date:r.date,ts:r.ts};
 if(store==='labResults')return{id:r.id,patientId:r.patient_id,testName:r.test_name,result:r.result,notes:r.notes,date:r.date,ts:r.ts};
@@ -1816,7 +1842,7 @@ if(store==='drugLibrary')return{id:r.id,name:r.drug_name||'',dose:r.dose||'',not
 return r;
 }
 function toRow(store,p){
-if(store==='patients')return{id:p.id,name:p.name,age:p.age?+p.age:null,husband_name:p.husbandName||'',husband_job:p.husbandJob||'',phone:p.phone||'',visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',source_category:p.sourceCategory||'',source_social:p.sourceSocial||'',source_friend_name:p.sourceFriendName||'',source_doctor_name:p.sourceDoctorName||'',source_street_details:p.sourceStreetDetails||'',source_other:p.sourceOther||'',date:p.date||null,time:p.time||null,status:p.status||'Waiting',notes:p.notes||'',created_at:p.createdAt||Date.now(),called_at:p.calledAt||null,marital_status:p.maritalStatus||'',is_first_marriage:p.isFirstMarriage||'',married_years:p.marriedYears||'',has_children:p.hasChildren||'',children_count:p.childrenCount?+p.childrenCount:null,delivery_type:p.deliveryType||'',husband_age:p.husbandAge?+p.husbandAge:null,husband_smoker:p.husbandSmoker||'',husband_diseased:p.husbandDiseased||'',husband_disease_text:p.husbandDiseaseText||'',og_history:p.ogHistory||{},address:p.address||'',husband_first_marriage:p.husbandFirstMarriage||'',husband_offspring:p.husbandOffspring||'',husband_offspring_count:p.husbandOffspringCount?+p.husbandOffspringCount:null,husband_offspring_males:p.husbandOffspringMales?+p.husbandOffspringMales:null,husband_offspring_females:p.husbandOffspringFemales?+p.husbandOffspringFemales:null,husband_offspring_names:p.husbandOffspringNames||''};
+if(store==='patients')return{id:p.id,name:p.name,age:p.age?+p.age:null,husband_name:p.husbandName||'',husband_job:p.husbandJob||'',phone:p.phone||'',visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',source_category:p.sourceCategory||'',source_social:p.sourceSocial||'',source_friend_name:p.sourceFriendName||'',source_doctor_name:p.sourceDoctorName||'',source_street_details:p.sourceStreetDetails||'',source_other:p.sourceOther||'',date:p.date||null,time:p.time||null,status:p.status||'Waiting',notes:p.notes||'',created_at:p.createdAt||Date.now(),called_at:p.calledAt||null,marital_status:p.maritalStatus||'',is_first_marriage:p.isFirstMarriage||'',married_years:p.marriedYears||'',has_children:p.hasChildren||'',children_count:p.childrenCount?+p.childrenCount:null,delivery_type:p.deliveryType||'',husband_age:p.husbandAge?+p.husbandAge:null,husband_smoker:p.husbandSmoker||'',husband_diseased:p.husbandDiseased||'',husband_disease_text:p.husbandDiseaseText||'',og_history:__packOg(p),address:p.address||'',husband_first_marriage:p.husbandFirstMarriage||'',husband_offspring:p.husbandOffspring||'',husband_offspring_count:p.husbandOffspringCount?+p.husbandOffspringCount:null,husband_offspring_males:p.husbandOffspringMales?+p.husbandOffspringMales:null,husband_offspring_females:p.husbandOffspringFemales?+p.husbandOffspringFemales:null,husband_offspring_names:p.husbandOffspringNames||''};
 if(store==='visits')return{id:p.id,patient_id:p.patientId,date:p.date||null,time:p.time||null,visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',notes:p.notes||'',ts:p.ts||Date.now()};
 if(store==='prescriptions')return{id:p.id,patient_id:p.patientId,patient_name:p.patientName,patient_age:p.patientAge?+p.patientAge:null,diagnosis:p.diagnosis||'',meds:p.meds||[],labs:p.labs||[],date:p.date||null,ts:p.ts||Date.now()};
 if(store==='labResults')return{id:p.id,patient_id:p.patientId,test_name:p.testName||'',result:p.result||'',notes:p.notes||'',date:p.date||null,ts:p.ts||Date.now()};
@@ -1934,7 +1960,7 @@ const FIELDS=[
 {k:'time',label:'وقت الموعد',type:'time'},
 {k:'notes',label:'ملاحظات',type:'textarea'}
 ];
-const CARRY_FIELDS=['maritalStatus','isFirstMarriage','marriedYears','hasChildren','childrenCount','deliveryType','husbandName','husbandAge','husbandJob','husbandSmoker','husbandDiseased','husbandDiseaseText','husbandFirstMarriage','husbandOffspring','husbandOffspringCount','husbandOffspringMales','husbandOffspringFemales','husbandOffspringNames','ogHistory'];
+const CARRY_FIELDS=['maritalStatus','isFirstMarriage','marriedYears','hasChildren','childrenCount','childrenFemales','childrenMales','childrenNames','deliveryType','husbandName','husbandAge','husbandJob','husbandSmoker','husbandDiseased','husbandDiseaseText','husbandFirstMarriage','husbandOffspring','husbandOffspringCount','husbandOffspringMales','husbandOffspringFemales','husbandOffspringNames','ogHistory'];
 const PREFIX_CONTAINER={reg:'regForm',pm:'pmForm'};
 const selectRefs={reg:{},pm:{}};
 function buildForm(containerId,prefix){
@@ -2132,13 +2158,14 @@ async function ensureVisitEditModal(){
 function openVisitEditModal(){
   ensureVisitEditModal();
   if($('visitEditPatientName'))$('visitEditPatientName').textContent=filePatient?.name||'';
+if($('visitEditKA'))$('visitEditKA').innerHTML=mfKeyAlarmHtml(filePatient||{});
   openModal('visitEditModal');
 }
 async function openPatientFile(id){
 const p=data.patients.find(x=>x.id===id);if(!p)return;
 filePatient=p;openVisitKeys={};ensureVisitEditModal();
 $('pfName').textContent=p.name;
-refreshFileInfo();renderPfIdentity();renderPersonalDetails();renderOgHistory();
+refreshFileInfo();renderPfIdentity();renderKeyAlarm();renderPersonalDetails();renderOgHistory();
 const identity=$('pfIdentity');if(identity)identity.style.display='grid';
 const info=$('pfInfo');if(info)info.style.display='block';
 collapseAllAcc();
@@ -2380,11 +2407,29 @@ let sourceInfo=p.sourceCategory||'?';
 if(p.sourceCategory==='وسائل التواصل الاجتماعي')sourceInfo+=' ('+(p.sourceSocial||'')+')';
 else if(p.sourceCategory==='صديق')sourceInfo+=': '+(p.sourceFriendName||'');
 else if(p.sourceCategory==='توصية طبيب')sourceInfo+=': د. '+(p.sourceDoctorName||'');
-$('pfInfo').innerHTML=`Age: <b>${esc(p.age||'?')}</b> | Status: <b>${maritalInfo}</b> | Source: <b>${esc(sourceInfo)}</b> | Husband: <b>${esc(p.husbandName||'—')}</b>`;
+$('pfInfo').innerHTML=`Source: <b>${esc(sourceInfo)}</b> | Husband: <b>${esc(p.husbandName||'—')}</b>`;
+}
+function renderKeyAlarm(){
+if(!filePatient)return;
+const a=$('pf_keyInfo'),b=$('pf_alarming');
+if(a)a.value=filePatient.keyInfo||'';if(b)b.value=filePatient.alarming||'';
+}
+function readKeyAlarm(){
+const a=$('pf_keyInfo'),b=$('pf_alarming');
+return{keyInfo:a?a.value.trim():(filePatient&&filePatient.keyInfo)||'',alarming:b?b.value.trim():(filePatient&&filePatient.alarming)||''};
+}
+async function saveKeyAlarm(){
+if(!filePatient)return;
+const next={...filePatient,...readKeyAlarm()};
+const ok=await dbPut('patients',next);
+if(!ok)return;
+filePatient=next;
+const v=await verifyPatientExtras(next.id,next);
+toast(v?'✅ تم حفظ Key / Alarming':'⚠️ تم الإرسال لكن فشل التحقق من الحفظ — أعد المحاولة');
 }
 function renderPfIdentity(){
 if(!filePatient)return;const p=filePatient;
-$('pfIdentity').innerHTML=`<div>Name: <b>${esc(p.name||'—')}</b></div><div>Age: <b>${esc(p.age||'—')}</b></div><div>Phone: <b>${esc(p.phone||'—')}</b></div><div>Address: <b>${esc(p.address||'—')}</b></div><div>Visit Purpose: <b>${esc(p.visitPurpose||'—')}</b></div><div>Visit Type: <b>${esc(p.visitType||'—')}</b></div>`;
+$('pfIdentity').innerHTML=`<div>Name: <b>${esc(p.name||'—')}</b></div><div>Visit Purpose: <b>${esc(p.visitPurpose||'—')}</b></div><div>Visit Type: <b>${esc(p.visitType||'—')}</b></div>`;
 }
 function toggleAcc(id){const body=$(id);if(!body)return;const open=body.style.display!=='none';body.style.display=open?'none':'block';const ic=$('ic-'+id);if(ic)ic.textContent=open?'▾':'▴';}
 function collapseAcc(id){const body=$(id);if(!body)return;body.style.display='none';const ic=$('ic-'+id);if(ic)ic.textContent='▾';}
@@ -2392,7 +2437,7 @@ function collapseAllAcc(){document.querySelectorAll('#fileModal .acc-body').forE
 function toggleWrap(id,on){const el=$(id);if(el)el.style.display=on?'block':'none';}
 function toggleMenopauseYears(){const sel=$('og_menstrualRegularity');if(!sel)return;toggleWrap('og_menopauseYearsWrap',sel.value==='Menopause');}
 function toggleLabsBox(id,btn){const el=$(id);if(!el)return;const open=el.style.display!=='none';el.style.display=open?'none':'grid';if(btn)btn.textContent=open?'🧪 Show Lab Tests':'🧪 Hide Lab Tests';}
-const PD_FIELDS=['maritalStatus','isFirstMarriage','marriedYears','hasChildren','childrenCount','husbandName','husbandAge','husbandJob','husbandSmoker','husbandDiseased','husbandDiseaseText','husbandFirstMarriage','husbandOffspring','husbandOffspringCount','husbandOffspringMales','husbandOffspringFemales','husbandOffspringNames'];
+const PD_FIELDS=['maritalStatus','isFirstMarriage','marriedYears','hasChildren','childrenCount','childrenFemales','childrenMales','childrenNames','husbandName','husbandAge','husbandJob','husbandSmoker','husbandDiseased','husbandDiseaseText','husbandFirstMarriage','husbandOffspring','husbandOffspringCount','husbandOffspringMales','husbandOffspringFemales','husbandOffspringNames'];
 function renderPersonalDetails(){
 if(!filePatient)return;const p=filePatient;
 PD_FIELDS.forEach(k=>{const el=$('pd_'+k);if(el)el.value=p[k]??'';});
@@ -2410,16 +2455,19 @@ toggleWrap('pd_husbandOffspringCountWrap',hNotFirst&&$('pd_husbandOffspring').va
 function bindPdBehaviors(){
 ['pd_isFirstMarriage','pd_hasChildren','pd_husbandDiseased','pd_husbandFirstMarriage','pd_husbandOffspring'].forEach(id=>{const el=$(id);if(el)el.addEventListener('change',applyPdConditionals);});
 }
-function savePersonalDetails(){
+async function savePersonalDetails(){
 if(!filePatient)return;
 const patch={};PD_FIELDS.forEach(k=>{const el=$('pd_'+k);patch[k]=el?el.value.trim():'';});
-if(patch.isFirstMarriage!=='No'){patch.hasChildren='';patch.childrenCount='';}
-else if(patch.hasChildren!=='Yes')patch.childrenCount='';
+if(patch.isFirstMarriage!=='No'){patch.hasChildren='';patch.childrenCount='';patch.childrenFemales='';patch.childrenMales='';patch.childrenNames='';}
+else if(patch.hasChildren!=='Yes'){patch.childrenCount='';patch.childrenFemales='';patch.childrenMales='';patch.childrenNames='';}
 if(patch.husbandDiseased!=='Yes')patch.husbandDiseaseText='';
 if(patch.husbandFirstMarriage!=='No'){patch.husbandOffspring='';patch.husbandOffspringCount='';patch.husbandOffspringMales='';patch.husbandOffspringFemales='';patch.husbandOffspringNames='';}
 else if(patch.husbandOffspring!=='Yes'){patch.husbandOffspringCount='';patch.husbandOffspringMales='';patch.husbandOffspringFemales='';patch.husbandOffspringNames='';}
-dbPut('patients',{...filePatient,...patch});filePatient={...filePatient,...patch};
-renderPfIdentity();refreshFileInfo();renderPersonalDetails();toast('✅ Personal saved');
+const __next={...filePatient,...patch};
+const __ok=await dbPut('patients',__next);
+if(__ok){filePatient=__next;renderPfIdentity();refreshFileInfo();renderPersonalDetails();
+ const __v=await verifyPatientExtras(__next.id,__next);
+ toast(__v?'✅ Personal saved':'⚠️ تم الحفظ لكن فشل التحقق من بيانات الأطفال — راجع الاتصال وأعد المحاولة');}
 }
 function calcObLmpEd(){
 const lmp=$('og_ob_lmp').value;
@@ -2763,6 +2811,7 @@ const cleanA=aEntries.filter(e=>e.weeks||e.type||e.complication);
 const cleanE=eEntries.filter(e=>e.side||e.treatment||e.notes);
 const cleanIcsi=icsiTrials.filter(t=>t.date||t.centerDr||t.protocol||t.drugs||t.oocyte||t.m2||t.fertilized||t.embryosTotal||t.straws||t.comment);
 const cleanIui=iuiTrials.filter(t=>t.date||t.centerDr||t.result);
+filePatient={...filePatient,...readKeyAlarm()};
 const existingOg=normalizedOg(filePatient);
 const checkedBaseInvLabs=[...document.querySelectorAll('#baseInvLabsChecklist input:checked')].map(i=>i.value);
 const ogHistory={
@@ -3424,7 +3473,7 @@ out+=mfSection('📋 Personal Details',nextColor(),s1);
 let s2='';
 s2+=mfRow('Marital Status',p.maritalStatus);
 s2+=mfRow('First Marriage?',p.isFirstMarriage);
-if(p.isFirstMarriage==='No'){s2+=mfRow('Has Children?',p.hasChildren);if(p.hasChildren==='Yes')s2+=mfRow('Number of Children',p.childrenCount);}
+if(p.isFirstMarriage==='No'){s2+=mfRow('Has Children?',p.hasChildren);if(p.hasChildren==='Yes'){s2+=mfRow('Number of Children',p.childrenCount);s2+=mfRow('Number of Females',p.childrenFemales);s2+=mfRow('Number of Males',p.childrenMales);s2+=mfRow('Children Names',p.childrenNames);}}
 s2+=mfRow('Married for',p.marriedYears);
 s2+=mfRow('Husband Name',p.husbandName);s2+=mfRow('Husband Age',p.husbandAge);s2+=mfRow('Husband Job',p.husbandJob);s2+=mfRow('Husband Smoker?',p.husbandSmoker);
 s2+=mfRow('Husband Diseased?',p.husbandDiseased);
@@ -3517,14 +3566,23 @@ try{localStorage.setItem(k,JSON.stringify(L));}catch(e){}
 try{if(typeof data!=='undefined'&&data.settings)data.settings[k]=L;}catch(e){}
 clearTimeout(__mfT[k]);
 __mfT[k]=setTimeout(async()=>{if(await mfLPush(k,L)){window.__mfWarn=0;toast('☁️ اتحفظ التخصيص على كل الأجهزة');}},800);}
+function mfKeyAlarmHtml(p){
+p=p||{};let live={};try{live=(data.patients||[]).find(x=>x.id===p.id)||{};}catch(e){}
+const key=String(p.keyInfo!==undefined?p.keyInfo:(live.keyInfo||'')).trim();
+const al=String(p.alarming!==undefined?p.alarming:(live.alarming||'')).trim();
+if(!key&&!al)return '';
+const pc='-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+const k=key?`<div class="mf-key" style="${pc}background:#fff;color:#1e1b2e;border:2px solid #7c3aed;border-radius:10px;padding:7px 12px;font-size:12.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word"><b style="color:#6d28d9">🔑 KEY:</b> ${esc(key)}</div>`:'';
+const a=al?`<div class="mf-alarm" style="${pc}background:#dc2626;color:#fff;border:2px solid #7f1d1d;border-radius:10px;padding:7px 12px;font-size:12.5px;font-weight:700;line-height:1.45;white-space:pre-wrap;word-break:break-word"><b>⚠️ ALARMING:</b> ${esc(al)}</div>`:'';
+return `<div class="mf-ka" style="display:grid;gap:6px;margin:0 0 12px">${k}${a}</div>`;
+}
 function mfBanner(p,tag,dt){
 p=p||{};let chips='',gp='';
 try{const o=(getMedicalFileOnlyData(normalizedOg(p)).obstetric)||{};
-const c=[['Age',p.age?p.age+' yrs':''],['Phone',p.phone],['Status',p.maritalStatus],['Address',p.address]];
 gp=['G','P','A','L','E','D'].map(k=>{const v=o[k.toLowerCase()+'Num'];return(v!==undefined&&v!==null&&String(v).trim()!=='')?k+String(v).trim():'';}).filter(Boolean).join('   ');
-chips=c.filter(x=>x[1]).map(x=>`<span><b>${x[0]}:</b> ${esc(x[1])}</span>`).join('');}catch(e){}
+}catch(e){}
 const cl=(typeof data!=='undefined'&&data.settings&&data.settings.clinicName)||'';
-return `<div class="mf-header">${cl?`<div class="mf-clinic">${esc(cl)}</div>`:''}<h2>${esc(p.name||'Patient')}</h2><div class="meta">${esc(tag||'')}${dt?' • '+esc(dt):''}</div>${gp?`<div class="mf-gp">${esc(gp)}</div>`:''}${chips?`<div class="mf-chips">${chips}</div>`:''}</div>`;
+return `<div class="mf-header">${cl?`<div class="mf-clinic">${esc(cl)}</div>`:''}<h2>${esc(p.name||'Patient')}</h2><div class="meta">${esc(tag||'')}${dt?' • '+esc(dt):''}</div>${gp?`<div class="mf-gp">${esc(gp)}</div>`:''}</div>${mfKeyAlarmHtml(p)}`;
 }
 function mfLCss(L){const g=L.gap/2;
 const T={side:`background:${L.tb}!important;color:${L.tt}!important;border-left:4px solid ${L.tt}!important;border-bottom:0!important`,bar:`background:${L.tt}!important;color:#fff!important;border:0!important`,line:`background:transparent!important;color:${L.tt}!important;border-left:0!important;border-bottom:2px solid ${L.tt}!important`}[L.tst]||'';
@@ -4004,7 +4062,7 @@ if(typeof value === 'object'){return Object.keys(value).every(k => isEmptyMedica
 return false;
 }
 function prettyMedicalLabel(key){
-const labels={name:'Name',age:'Age',phone:'Phone',email:'Email',address:'Address',maritalStatus:'Marital Status',isFirstMarriage:'First Marriage?',marriedYears:'Married for',hasChildren:'Children?',childrenCount:'Number of Children',husbandName:'Husband Name',husbandAge:'Husband Age',husbandJob:'Husband Job',husbandSmoker:'Husband Smoker?',husbandDiseased:'Husband Diseased?',husbandDiseaseText:'Husband Diseases',husbandFirstMarriage:'Husband First Marriage?',husbandOffspring:'Husband Has Children?',husbandOffspringCount:'Husband Number of Children',husbandOffspringMales:'Husband Number of Male Children',husbandOffspringFemales:'Husband Number of Female Children',husbandOffspringNames:'Husband Children Names',sourceCategory:'Source',sourceSocial:'Social Media Source',sourceFriendName:'Friend Name',sourceDoctorName:'Doctor Name',sourceStreetDetails:'Street Details',sourceOther:'Other Source',notes:'Notes',regularity:'Regularity',cycleDays:'Cycle (days)',durationDays:'Duration (days)',pregnant:'Currently Pregnant?',lmpDate:'LMP',lmp:'LMP',edd:'EDD',ga:'GA',g:'G',l:'L',d:'D',pastMedical:'Medical History',pastSurgical:'Surgical History',contraceptive:'Contraceptive History',complaint:'Complaint',presentHistory:'Present History',impression:'Impression',method:'Examination Method',uterus:'Uterus',rtAdnexa:'RT Adnexa',ltAdnexa:'LT Adnexa',pelvis:'Pelvis',other:'Other',hsg:'HSG',hsgReason:'HSG Reason',uss:'USS / 3D',ussType:'USS Type',ussFindings:'USS Findings',semenOn:'Semen Analysis',date:'Date',labName:'Lab',volume:'Volume (ml)',count:'Count (M/ml)',progressive:'Progressive %',normal:'Normal %',laparoscopeOn:'Laparoscope',laparoscope:'Laparoscope Details',hystroscopeOn:'Hysteroscope',hystroscope:'Hystroscope Details',icsiOn:'ICSI',icsiTrials:'ICSI Trials',iuiOn:'IUI',iuiTrials:'IUI Trials',type:'Type',gender:'Gender',hospital:'Hospital',num:'Number',drName:'Doctor',complication:'Complication',side:'Side',treatment:'Treatment',centerDr:'Center / Doctor',protocol:'Protocol',drugs:'Drugs',oocyte:'Oocyte',m2:'M2',fertilized:'Fertilized',embryosTotal:'Total Embryos',embryosDay:'Embryo Day',embryosQuality:'Embryo Quality',straws:'Straws',comment:'Comment',result:'Result',keyNotes:'Important Notes'};
+const labels={name:'Name',age:'Age',phone:'Phone',email:'Email',address:'Address',maritalStatus:'Marital Status',isFirstMarriage:'First Marriage?',marriedYears:'Married for',hasChildren:'Children?',childrenCount:'Number of Children',childrenFemales:'Number of Female Children',childrenMales:'Number of Male Children',childrenNames:'Children Names',keyInfo:'Key',alarming:'Alarming',husbandName:'Husband Name',husbandAge:'Husband Age',husbandJob:'Husband Job',husbandSmoker:'Husband Smoker?',husbandDiseased:'Husband Diseased?',husbandDiseaseText:'Husband Diseases',husbandFirstMarriage:'Husband First Marriage?',husbandOffspring:'Husband Has Children?',husbandOffspringCount:'Husband Number of Children',husbandOffspringMales:'Husband Number of Male Children',husbandOffspringFemales:'Husband Number of Female Children',husbandOffspringNames:'Husband Children Names',sourceCategory:'Source',sourceSocial:'Social Media Source',sourceFriendName:'Friend Name',sourceDoctorName:'Doctor Name',sourceStreetDetails:'Street Details',sourceOther:'Other Source',notes:'Notes',regularity:'Regularity',cycleDays:'Cycle (days)',durationDays:'Duration (days)',pregnant:'Currently Pregnant?',lmpDate:'LMP',lmp:'LMP',edd:'EDD',ga:'GA',g:'G',l:'L',d:'D',pastMedical:'Medical History',pastSurgical:'Surgical History',contraceptive:'Contraceptive History',complaint:'Complaint',presentHistory:'Present History',impression:'Impression',method:'Examination Method',uterus:'Uterus',rtAdnexa:'RT Adnexa',ltAdnexa:'LT Adnexa',pelvis:'Pelvis',other:'Other',hsg:'HSG',hsgReason:'HSG Reason',uss:'USS / 3D',ussType:'USS Type',ussFindings:'USS Findings',semenOn:'Semen Analysis',date:'Date',labName:'Lab',volume:'Volume (ml)',count:'Count (M/ml)',progressive:'Progressive %',normal:'Normal %',laparoscopeOn:'Laparoscope',laparoscope:'Laparoscope Details',hystroscopeOn:'Hysteroscope',hystroscope:'Hystroscope Details',icsiOn:'ICSI',icsiTrials:'ICSI Trials',iuiOn:'IUI',iuiTrials:'IUI Trials',type:'Type',gender:'Gender',hospital:'Hospital',num:'Number',drName:'Doctor',complication:'Complication',side:'Side',treatment:'Treatment',centerDr:'Center / Doctor',protocol:'Protocol',drugs:'Drugs',oocyte:'Oocyte',m2:'M2',fertilized:'Fertilized',embryosTotal:'Total Embryos',embryosDay:'Embryo Day',embryosQuality:'Embryo Quality',straws:'Straws',comment:'Comment',result:'Result',keyNotes:'Important Notes'};
 if(labels[key]) return labels[key];
 return String(key).replace(/([A-Z])/g,' $1').replace(/_/g,' ').replace(/^./,s=>s.toUpperCase()).trim();
 }
