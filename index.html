@@ -3504,8 +3504,19 @@ teal:{hc1:'#0f766e',hc2:'#0891b2',ht:'#ffffff',tb:'#ecfeff',tt:'#115e59',bc:'#a5
 mono:{hc1:'#ffffff',hc2:'#ffffff',ht:'#111827',tb:'#f3f4f6',tt:'#111827',bc:'#9ca3af',lc:'#4b5563',vc:'#000000',bg:'#ffffff',fm:'row',zb:0,tst:'line',fs:12,ts:13,r:4,gap:8,pad:4,cols:2},
 classic:{hc1:'#7c3aed',hc2:'#db2777',ht:'#ffffff',tb:'#faf5ff',tt:'#581c87',bc:'#e9d5ff',lc:'#7c3aed',vc:'#1e1b2e',bg:'#ffffff',fm:'stack',zb:0,tst:'side',fs:12,ts:12.5,r:10,gap:10,pad:6,cols:2}};
 const MFL_DEF={...MFL_PRESETS.clinic,font:'Tahoma,Arial,sans-serif',maxw:900,pm:8,hdr:1,ftr:1,order:[],secs:{}};
-function mfLGet(){try{return {...MFL_DEF,...JSON.parse(localStorage.getItem(mfLKey())||'{}')};}catch(e){return {...MFL_DEF};}}
-function mfLSave(L){try{localStorage.setItem(mfLKey(),JSON.stringify(L));}catch(e){}}
+function mfLGet(){const k=mfLKey();let v=null;
+try{v=(typeof data!=='undefined'&&data.settings)?data.settings[k]:null;
+if(!v||typeof v!=='object'){v=JSON.parse(localStorage.getItem(k)||'null');
+if(v&&typeof data!=='undefined'&&data.settings&&!window['__mfm'+k]){window['__mfm'+k]=1;setTimeout(()=>mfLPush(k,v),0);}}}catch(e){v=null;}
+return {...MFL_DEF,...(v&&typeof v==='object'?v:{})};}
+const __mfT={};
+async function mfLPush(k,v){try{if(typeof sb==='undefined'||!sb)throw new Error('offline');const{error}=await sb.from('settings').upsert({key:k,value:v});if(error)throw error;return true;}
+catch(e){console.warn('layout sync failed',e);if(!window.__mfWarn){window.__mfWarn=1;toast('⚠️ التخصيص اتحفظ على الجهاز ده بس — مفيش اتصال بالسيرفر');}return false;}}
+function mfLSave(L){const k=mfLKey();
+try{localStorage.setItem(k,JSON.stringify(L));}catch(e){}
+try{if(typeof data!=='undefined'&&data.settings)data.settings[k]=L;}catch(e){}
+clearTimeout(__mfT[k]);
+__mfT[k]=setTimeout(async()=>{if(await mfLPush(k,L)){window.__mfWarn=0;toast('☁️ اتحفظ التخصيص على كل الأجهزة');}},800);}
 function mfBanner(p,tag,dt){
 p=p||{};let chips='',gp='';
 try{const o=(getMedicalFileOnlyData(normalizedOg(p)).obstetric)||{};
@@ -3633,7 +3644,7 @@ ov.querySelectorAll('[data-f]').forEach(el=>el.oninput=el.onchange=()=>{const f=
 ov.querySelector('#mfDesPre').onchange=e=>{const pr=MFL_PRESETS[e.target.value];if(!pr)return;L={...L,...pr};save();ov.remove();document.body.style.overflow='';openMfDesigner(mode,vid);};
 ov.querySelector('#mfDesAuto').onclick=()=>{Object.values(L.secs).forEach(x=>{delete x.w;delete x.h;});L.order=[];save();draw();};
 ov.querySelector('#mfDesPrint').onclick=()=>mode=='visit'?printQuickVisit(vid):printPatientFile();
-ov.querySelector('#mfDesReset').onclick=()=>{if(!confirm('إرجاع الشكل الافتراضي؟'))return;try{localStorage.removeItem(mfLKey());}catch(e){}ov.remove();document.body.style.overflow='';openMfDesigner(mode,vid);};
+ov.querySelector('#mfDesReset').onclick=()=>{if(!confirm('إرجاع الشكل الافتراضي؟'))return;mfLSave({...MFL_DEF,order:[],secs:{}});ov.remove();document.body.style.overflow='';openMfDesigner(mode,vid);};
 ov.querySelector('#mfDesDone').onclick=()=>{ov.remove();document.body.style.overflow='';mode=='visit'?openVisitView(vid):viewCurrentMedicalFile();};
 draw();
 }
