@@ -413,6 +413,37 @@ table{min-width:720px}
 .mf-footer2{margin-top:6px;text-align:center;font-size:10.5px;color:#94a3b8;padding-top:10px;border-top:1px dashed #e2e8f0}
 .mf-empty2{padding:30px 16px;text-align:center;color:#94a3b8;font-size:13px}
 </style>
+
+<style id="mf-edit-colors-ltr">
+/* ===== Medical-file data entry: colours + left alignment ===== */
+#pfEditArea, #visitEditArea, #fileModal .set-card, #pfKeyAlarm { direction:ltr; text-align:left; }
+#pfEditArea input, #pfEditArea select, #pfEditArea textarea,
+#visitEditArea input, #visitEditArea select, #visitEditArea textarea { direction:ltr; text-align:left; }
+#pfEditArea .acc, #visitEditArea .acc { border:1.5px solid #c4b5fd; border-radius:10px; background:#faf5ff; }
+#pfEditArea .acc-head, #visitEditArea .acc-head,
+#pfEditArea .acc.nested>.acc-head, #visitEditArea .acc.nested>.acc-head { background:linear-gradient(90deg,#6d28d9,#8b5cf6)!important; }
+#pfEditArea .acc-head:hover, #visitEditArea .acc-head:hover { filter:brightness(1.08); }
+#pfEditArea .acc-head h4, #visitEditArea .acc-head h4 { color:#fff!important; }
+#pfEditArea .acc-ic, #visitEditArea .acc-ic { color:#fff!important; }
+#pfEditArea .acc-body, #visitEditArea .acc-body { background:#f5f3ff; border-top:0; }
+#pfEditArea .acc-body .acc-body, #visitEditArea .acc-body .acc-body { background:#ede9fe; }
+#pfEditArea .og-input, #pfEditArea .og-ta, #visitEditArea .og-input, #visitEditArea .og-ta { background:#fff; border-color:#c4b5fd; }
+/* Complaint = its own colour */
+#pfEditArea .acc-complaint, #visitEditArea .acc-complaint { border-color:#fdba74; background:#fff7ed; }
+#pfEditArea .acc.nested.acc-complaint>.acc-head, #visitEditArea .acc.nested.acc-complaint>.acc-head { background:linear-gradient(90deg,#c2410c,#f97316)!important; }
+#pfEditArea .acc-complaint>.acc-body, #visitEditArea .acc-complaint>.acc-body { background:#ffedd5; }
+#pfEditArea .acc-complaint .og-ta, #visitEditArea .acc-complaint .og-ta { border-color:#fdba74; }
+/* A P E G L D row */
+.apegld-row{margin:6px 0 4px;padding:10px;border:1.5px dashed #a78bfa;border-radius:10px;background:#fff}
+.apegld-title{font-weight:800;color:#5b21b6;font-size:13px;margin-bottom:8px}
+.apegld-title span{font-weight:500;color:#7c3aed;font-size:11px;margin-left:6px}
+.apegld-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.apegld-grid>div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.apegld-grid b{font-size:15px;color:#6d28d9}
+.apegld-grid .og-input{text-align:center!important;margin-bottom:0;padding:8px 4px}
+.pd-note{min-height:44px}
+@media (max-width:520px){.apegld-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
 </head>
 <body>
 <div id="globalError" style="display:none;position:fixed;inset:0;background:#fef2f2;z-index:99999;align-items:center;justify-content:center;padding:20px">
@@ -502,6 +533,7 @@ table{min-width:720px}
 <div class="stat"><div class="num" id="stTodayCases">0</div><div class="lbl">عدد حالات اليوم</div></div>
 </div>
 <div class="toolbar">
+<input id="patSearchInp" placeholder="🔎 بحث باسم الحالة أو التليفون..." autocomplete="off" style="min-width:220px;flex:1;max-width:320px">
 <input type="date" id="patDate">
 <select id="patPurpose"></select>
 <select id="patType"></select>
@@ -522,6 +554,7 @@ table{min-width:720px}
 <div class="card">
 <h2>🗂️ صفحة الزيارات</h2>
 <div class="toolbar" style="align-items:center">
+<input id="visitsPatientSearch" placeholder="🔎 بحث باسم الحالة..." autocomplete="off" style="min-width:220px;flex:1;max-width:320px">
 <input type="date" id="visitsDateFilter" title="فلترة حسب تاريخ تسجيل الحالة">
 <label style="display:flex;align-items:center;gap:6px;font-size:13px;white-space:nowrap"><input type="checkbox" id="visitsShowAll"> عرض كل الحالات</label>
 <button class="btn gray" id="visitsResetBtn" type="button">إعادة</button>
@@ -651,6 +684,7 @@ table{min-width:720px}
 <select id="pd_maritalStatus" class="og-input"><option value="">-- Select --</option><option>Virgin</option><option>Married</option><option>Divorced</option><option>Widow</option></select>
 <label class="flabel">First Marriage?</label>
 <select id="pd_isFirstMarriage" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+<textarea id="pd_isFirstMarriageNote" class="og-ta pd-note" rows="2" placeholder="Add details..."></textarea>
 <div id="pd_offspringWrap" class="cond-box" style="display:none">
 <label class="flabel">Offspring?</label>
 <select id="pd_hasChildren" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
@@ -679,6 +713,7 @@ table{min-width:720px}
 </div>
 <label class="flabel">Smoker?</label>
 <select id="pd_husbandSmoker" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+<textarea id="pd_husbandSmokerNote" class="og-ta pd-note" rows="2" placeholder="Add details..."></textarea>
 <label class="flabel">Diseased?</label>
 <select id="pd_husbandDiseased" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
 <div id="pd_husbandDiseaseWrap" class="cond-box" style="display:none">
@@ -687,6 +722,7 @@ table{min-width:720px}
 </div>
 <label class="flabel">First Marriage?</label>
 <select id="pd_husbandFirstMarriage" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
+<textarea id="pd_husbandFirstMarriageNote" class="og-ta pd-note" rows="2" placeholder="Add details..."></textarea>
 <div id="pd_husbandOffspringWrap" class="cond-box" style="display:none">
 <label class="flabel">Offspring?</label>
 <select id="pd_husbandOffspring" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
@@ -731,13 +767,26 @@ table{min-width:720px}
 <option value="Yes">Yes</option>
 <option value="No">No</option>
 </select>
-<div class="acc nested">
+</div>
+</div>
+<div class="acc nested pf-base-el">
 <div class="acc-head" onclick="toggleAcc('accObstetric')"><h4>🤰 Obstetric History</h4><span class="acc-ic" id="ic-accObstetric">▾</span></div>
 <div class="acc-body" id="accObstetric" style="display:none">
 <div class="og-row">
 <div style="flex:1"><label class="flabel">LMP</label><input id="og_ob_lmp" type="date" class="og-input" onchange="calcObLmpEd()"></div>
 <div style="flex:1"><label class="flabel">EDD</label><input id="og_ob_edd" type="date" class="og-input" readonly style="background:#fef3c7"></div>
 <div style="flex:1"><label class="flabel">GA</label><input id="og_ob_ga" class="og-input" readonly style="background:#dbeafe" placeholder="Auto"></div>
+</div>
+<div class="apegld-row">
+<div class="apegld-title">A · P · E · G · L · D <span>(يظهر في رأس الملف الطبي)</span></div>
+<div class="apegld-grid">
+<div><b>A</b><input id="og_ob_aNum" type="text" inputmode="numeric" class="og-input" autocomplete="off"></div>
+<div><b>P</b><input id="og_ob_pNum" type="text" inputmode="numeric" class="og-input" autocomplete="off"></div>
+<div><b>E</b><input id="og_ob_eNum" type="text" inputmode="numeric" class="og-input" autocomplete="off"></div>
+<div><b>G</b><input id="og_ob_gNum" type="text" inputmode="numeric" class="og-input" autocomplete="off"></div>
+<div><b>L</b><input id="og_ob_lNum" type="text" inputmode="numeric" class="og-input" autocomplete="off"></div>
+<div><b>D</b><input id="og_ob_dNum" type="text" inputmode="numeric" class="og-input" autocomplete="off"></div>
+</div>
 </div>
 <div class="gplade-row" style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">
 <button type="button" class="btn gray sm gplade-btn" data-letter="G" onclick="toggleGplade('G')">G</button>
@@ -747,14 +796,12 @@ table{min-width:720px}
 <button type="button" class="btn gray sm gplade-btn" data-letter="A" onclick="toggleGplade('A')">A</button>
 <button type="button" class="btn gray sm gplade-btn" data-letter="E" onclick="toggleGplade('E')">E</button>
 </div>
-<div id="gplade_G" class="cond-box" style="display:none"><div style="margin-bottom:8px"><label class="flabel">Num</label><input id="og_ob_gNum" type="number" min="0" class="og-input" style="max-width:110px"></div><label class="flabel">G</label><input id="og_ob_g" class="og-input"></div>
-<div id="gplade_P" class="cond-box" style="display:none"><div style="margin-bottom:8px"><label class="flabel">Num</label><input id="og_ob_pNum" type="number" min="0" class="og-input" style="max-width:110px"></div><label class="flabel">P entries</label><div id="pEntries"></div><button type="button" class="btn gray sm gp-add-btn" onclick="addPEntry()">➕ Add P</button></div>
-<div id="gplade_L" class="cond-box" style="display:none"><div style="margin-bottom:8px"><label class="flabel">Num</label><input id="og_ob_lNum" type="number" min="0" class="og-input" style="max-width:110px"></div><label class="flabel">L</label><textarea id="og_ob_l" class="og-ta"></textarea></div>
-<div id="gplade_D" class="cond-box" style="display:none"><div style="margin-bottom:8px"><label class="flabel">Num</label><input id="og_ob_dNum" type="number" min="0" class="og-input" style="max-width:110px"></div><label class="flabel">D</label><textarea id="og_ob_d" class="og-ta"></textarea></div>
-<div id="gplade_A" class="cond-box" style="display:none"><div style="margin-bottom:8px"><label class="flabel">Num</label><input id="og_ob_aNum" type="number" min="0" class="og-input" style="max-width:110px"></div><label class="flabel">A entries</label><div id="aEntries"></div><button type="button" class="btn gray sm gp-add-btn" onclick="addAEntry()">➕ Add A</button></div>
-<div id="gplade_E" class="cond-box" style="display:none"><div style="margin-bottom:8px"><label class="flabel">Num</label><input id="og_ob_eNum" type="number" min="0" class="og-input" style="max-width:110px"></div><label class="flabel">E entries</label><div id="eEntries"></div><button type="button" class="btn gray sm gp-add-btn" onclick="addEEntry()">➕ Add E</button></div>
-</div>
-</div>
+<div id="gplade_G" class="cond-box" style="display:none"><label class="flabel">G</label><input id="og_ob_g" class="og-input"></div>
+<div id="gplade_P" class="cond-box" style="display:none"><label class="flabel">P entries</label><div id="pEntries"></div><button type="button" class="btn gray sm gp-add-btn" onclick="addPEntry()">➕ Add P</button></div>
+<div id="gplade_L" class="cond-box" style="display:none"><label class="flabel">L</label><textarea id="og_ob_l" class="og-ta"></textarea></div>
+<div id="gplade_D" class="cond-box" style="display:none"><label class="flabel">D</label><textarea id="og_ob_d" class="og-ta"></textarea></div>
+<div id="gplade_A" class="cond-box" style="display:none"><label class="flabel">A entries</label><div id="aEntries"></div><button type="button" class="btn gray sm gp-add-btn" onclick="addAEntry()">➕ Add A</button></div>
+<div id="gplade_E" class="cond-box" style="display:none"><label class="flabel">E entries</label><div id="eEntries"></div><button type="button" class="btn gray sm gp-add-btn" onclick="addEEntry()">➕ Add E</button></div>
 </div>
 </div>
 <div class="acc nested pf-base-el">
@@ -789,7 +836,7 @@ table{min-width:720px}
 <div class="acc-head" onclick="toggleAcc('accContraceptive')"><h4>Contraceptive History</h4><span class="acc-ic" id="ic-accContraceptive">▾</span></div>
 <div class="acc-body" id="accContraceptive" style="display:none"><textarea id="og_contraceptive" class="og-ta"></textarea></div>
 </div>
-<div class="acc nested pf-base-el">
+<div class="acc nested pf-base-el acc-complaint">
 <div class="acc-head" onclick="toggleAcc('accBaseComplaint')"><h4>😟 Complaint</h4><span class="acc-ic" id="ic-accBaseComplaint">▾</span></div>
 <div class="acc-body" id="accBaseComplaint" style="display:none"><textarea id="og_baseComplaint" class="og-ta"></textarea></div>
 </div>
@@ -849,7 +896,8 @@ table{min-width:720px}
 <div class="acc nested pf-base-el">
 <div class="acc-head" onclick="toggleAcc('accBaseExam')"><h4>🔍 Examination</h4><span class="acc-ic" id="ic-accBaseExam">▾</span></div>
 <div class="acc-body" id="accBaseExam" style="display:none">
-<select id="og_baseExamMethod" class="og-input"><option value="">-- Select method --</option><option>Transvaginal (TVUS)</option><option>Transabdominal (TAUS)</option></select>
+<select id="og_baseExamMethod" class="og-input"><option value="">-- Select method --</option><option>Transvaginal (TVUS)</option><option>Transabdominal (TAUS)</option><option>Clinical</option></select>
+<div id="og_baseExamClinicalWrap" class="cond-box" style="display:none"><label class="flabel">Clinical</label><textarea id="og_baseExamClinical" class="og-ta" style="min-height:110px"></textarea></div>
 <div id="og_baseExamFields" style="display:none">
 <label class="flabel">Uterus</label>
 <textarea id="og_baseUterus" class="og-ta"></textarea>
@@ -958,7 +1006,7 @@ table{min-width:720px}
 <div class="acc-head" onclick="toggleAcc('accBlank')"><h4>📝 Notes</h4><span class="acc-ic" id="ic-accBlank">▾</span></div>
 <div class="acc-body" id="accBlank" style="display:none"><textarea id="og_blankNotes" class="og-ta" style="min-height:160px"></textarea></div>
 </div>
-<div class="acc nested visit-only-acc" data-visit-types="Antenatal,Gynae">
+<div class="acc nested visit-only-acc acc-complaint" data-visit-types="Antenatal,Gynae">
 <div class="acc-head" onclick="toggleAcc('accComplaint')"><h4>😟 Complaint</h4><span class="acc-ic" id="ic-accComplaint">▾</span></div>
 <div class="acc-body" id="accComplaint" style="display:none"><textarea id="og_complaint" class="og-ta"></textarea></div>
 </div>
@@ -1018,7 +1066,8 @@ table{min-width:720px}
 <div class="acc nested visit-only-acc" data-visit-types="Gynae">
 <div class="acc-head" onclick="toggleAcc('accExam')"><h4>🔍 Examination</h4><span class="acc-ic" id="ic-accExam">▾</span></div>
 <div class="acc-body" id="accExam" style="display:none">
-<select id="og_examMethod" class="og-input"><option value="">-- Select method --</option><option>Transvaginal (TVUS)</option><option>Transabdominal (TAUS)</option></select>
+<select id="og_examMethod" class="og-input"><option value="">-- Select method --</option><option>Transvaginal (TVUS)</option><option>Transabdominal (TAUS)</option><option>Clinical</option></select>
+<div id="og_examClinicalWrap" class="cond-box" style="display:none"><label class="flabel">Clinical</label><textarea id="og_examClinical" class="og-ta" style="min-height:110px"></textarea></div>
 <div id="og_examFields" style="display:none">
 <label class="flabel">Uterus</label>
 <textarea id="og_uterus" class="og-ta"></textarea>
@@ -1596,11 +1645,10 @@ return`<div class="lab-inline" data-test="${esc(name)}">
 <b style="color:#15803d;font-size:13px">🧪 ${esc(name)}</b>
 <input class="lab-result" placeholder="Result" value="${esc(resVal)}">
 <input class="lab-unit" placeholder="Unit" value="${esc(unitVal)}">
-<button class="btn primary sm" onclick="saveBaseInlineLab('${esc(name).replace(/'/g,"\\'")}')">💾</button>
 </div>`;
 }).join('');
 }
-function saveBaseInlineLab(testName){
+function __oldSaveBaseInlineLab(testName){
 if(!filePatient)return;
 const box=document.querySelector(`#baseInvLabsInlineResults .lab-inline[data-test="${testName}"]`);
 if(!box)return;
@@ -1821,7 +1869,7 @@ async function ensureDefaultsRemote(){
 const defaults={clinicName:data.settings.clinicName||'',examPrice:data.settings.examPrice||0,followupPrice:data.settings.followupPrice||0,sources:data.settings.sources&&data.settings.sources.length?data.settings.sources:['Facebook','Friends','Another Patient'],visitPurposes:data.settings.visitPurposes&&data.settings.visitPurposes.length?data.settings.visitPurposes:['كشف نسا','متابعة حمل','تاخر حمل'],rxLabTests:data.settings.rxLabTests&&data.settings.rxLabTests.length?data.settings.rxLabTests:['CBC','FSH','LH','Prolactin','Estradiol (E2)','Progesterone','AMH','TSH','Free T4']};
 for(const k of Object.keys(defaults)){if(data.settings[k]===undefined||data.settings[k]===null){data.settings[k]=defaults[k];await sb.from('settings').upsert({key:k,value:defaults[k]});}}
 }
-const PATIENT_EXTRA_KEYS=['childrenFemales','childrenMales','childrenNames','keyInfo','alarming'];
+const PATIENT_EXTRA_KEYS=['childrenFemales','childrenMales','childrenNames','keyInfo','alarming','isFirstMarriageNote','husbandSmokerNote','husbandFirstMarriageNote'];
 function __unOg(h){const o={...(h&&typeof h==='object'?h:{})};delete o.__extra;return o;}
 function __exFrom(h){const x=(h&&typeof h==='object'&&h.__extra)||{};const o={};PATIENT_EXTRA_KEYS.forEach(k=>{o[k]=x[k]==null?'':String(x[k]);});return o;}
 function __packOg(p){const o={...(p.ogHistory||{})};const x={};PATIENT_EXTRA_KEYS.forEach(k=>{const v=p[k];if(v!==undefined&&v!==null&&String(v)!=='')x[k]=String(v);});if(Object.keys(x).length)o.__extra=x;else delete o.__extra;return o;}
@@ -2139,7 +2187,7 @@ const list=filteredPatients();
 $('stTodayCases').textContent=list.length;
 $('patBody').innerHTML=list.length?list.map((p,i)=>`<tr><td>${i+1}</td><td><b style="cursor:pointer;color:#be185d" onclick="openPatientFile('${p.id}')">${esc(p.name)}</b></td><td>${esc(p.age)}</td><td>${esc(p.visitPurpose||'—')}</td><td><span class="chip ${isNewVisit(p.visitType)?'exam':'followup'}">${esc(p.visitType||'—')}</span></td><td><span class="chip ${p.status==='Done'?'done':(p.status==='Called'?'call':'wait')}">${esc(p.status||'—')}</span></td><td>${esc(p.date||'—')}</td><td><button class="btn sm gray" onclick="openPatientFile('${p.id}')">📁</button> <button class="btn sm blue" onclick="openPatientModal('${p.id}')">✏️</button> <button class="btn sm red" onclick="delPatient('${p.id}')">🗑</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty">No patients</td></tr>';
 }
-function resetPatFilters(){patSearch='';patPurpose='';patType='';patDateVal='';patShowAll=false;$('patDate').value='';$('patShowAll').checked=false;renderPatients();}
+function resetPatFilters(){patSearch='';if($('patSearchInp'))$('patSearchInp').value='';patPurpose='';patType='';patDateVal='';patShowAll=false;$('patDate').value='';$('patShowAll').checked=false;renderPatients();}
 function exportExcel(){
 const rows=[['#','Name','Age','Phone','Address','Purpose','Type','Date','Status','Notes']];
 filteredPatients().forEach((p,i)=>{rows.push([i+1,p.name,p.age,p.phone,p.address,p.visitPurpose,p.visitType,p.date,p.status,p.notes]);});
@@ -2265,7 +2313,7 @@ function enterNewVisit(type){
   ['og_hsg','og_hsgReason','og_uss','og_ussType','og_ussCrl','og_ussGs','og_ussGa','og_ussFindings'].forEach(id=>{if($(id))$(id).value='';});
   if($('og_semenOn'))$('og_semenOn').checked=false;toggleWrap('og_semenWrap',false);
   ['og_semenDate','og_semenLab','og_semenVolume','og_semenCount','og_semenPr','og_semenNormal'].forEach(id=>{if($(id))$(id).value='';});
-  if($('og_examMethod'))$('og_examMethod').value='';if($('og_examFields'))$('og_examFields').style.display='none';
+  if($('og_examMethod'))$('og_examMethod').value='';if($('og_examClinical'))$('og_examClinical').value='';if($('og_examFields'))$('og_examFields').style.display='none';if($('og_examClinicalWrap'))$('og_examClinicalWrap').style.display='none';
   ['og_uterus','og_rtAdnexa','og_ltAdnexa','og_pelvis','og_examOther','og_folEndo','og_folRight','og_folLeft'].forEach(id=>{if($(id))$(id).value='';});
   try{mgmtDrugs=[{name:'',dose:'',note:''}];mgmtExtraLabs=[];renderMgmtDrugs();renderMgmtExtraLabs();renderMgmtLabsChecklist([]);renderMgmtPkgList();}catch(e){console.error(e);}
   if($('og_wtReduction'))$('og_wtReduction').value='';if($('og_mgmtPlan'))$('og_mgmtPlan').value='';if($('og_visitName'))$('og_visitName').value='';if($('og_visitDate'))$('og_visitDate').value=todayStr();if($('og_nextVisitDate'))$('og_nextVisitDate').value='';
@@ -2312,6 +2360,7 @@ await persistQuickVisit();
 }
 async function persistQuickVisit(){
 if(!filePatient){toast('⚠️ اختر المريضة أولاً');return;}
+saveLabRowsFor('#invLabsInlineResults .lab-inline');
 pEntries.forEach((_,i)=>syncPEntry(i));
 aEntries.forEach((_,i)=>syncAEntry(i));
 eEntries.forEach((_,i)=>syncEEntry(i));
@@ -2351,7 +2400,7 @@ semen:$('og_semenOn').checked?{date:$('og_semenDate').value,labName:$('og_semenL
 invLabs:checkedInvLabs,
 invLabResults
 },
-examination:{method:$('og_examMethod').value,uterus:$('og_uterus').value.trim(),rtAdnexa:$('og_rtAdnexa').value.trim(),ltAdnexa:$('og_ltAdnexa').value.trim(),pelvis:$('og_pelvis').value.trim(),other:$('og_examOther').value.trim()},
+examination:{method:$('og_examMethod').value,clinical:$('og_examMethod').value==='Clinical'?$('og_examClinical').value.trim():'',uterus:$('og_uterus').value.trim(),rtAdnexa:$('og_rtAdnexa').value.trim(),ltAdnexa:$('og_ltAdnexa').value.trim(),pelvis:$('og_pelvis').value.trim(),other:$('og_examOther').value.trim()},
 folliculometry:{endo:$('og_folEndo').value.trim(),rightOvary:$('og_folRight').value.trim(),leftOvary:$('og_folLeft').value.trim()},
 blankNotes:$('og_blankNotes').value.trim(),
 keyNotes:$('og_keyNotes')?.value.trim()||'',
@@ -2385,7 +2434,7 @@ function openFileView(){
 }
 function maritalSummary(p){
 p=p||{};let s=p.maritalStatus||'N/A';
-if(p.isFirstMarriage)s+=` | First marriage: ${p.isFirstMarriage}`;
+if(p.isFirstMarriage)s+=` | First marriage: ${p.isFirstMarriage}`+(p.isFirstMarriageNote?` (${p.isFirstMarriageNote})`:'');
 if(p.isFirstMarriage==='No'){s+=` | Offspring: ${p.hasChildren||'N/A'}`;if(p.hasChildren==='Yes')s+=` (${p.childrenCount||'0'})`;}
 return s;
 }
@@ -2394,9 +2443,9 @@ p=p||{};const bits=[];
 if(p.husbandName)bits.push(p.husbandName);
 if(p.husbandAge)bits.push('Age: '+p.husbandAge);
 if(p.husbandJob)bits.push(p.husbandJob);
-if(p.husbandSmoker)bits.push('Smoker: '+p.husbandSmoker);
+if(p.husbandSmoker||p.husbandSmokerNote)bits.push('Smoker: '+(p.husbandSmoker||'')+(p.husbandSmokerNote?' ('+p.husbandSmokerNote+')':''));
 if(p.husbandDiseased)bits.push('Diseased: '+p.husbandDiseased+(p.husbandDiseased==='Yes'&&p.husbandDiseaseText?' ('+p.husbandDiseaseText+')':''));
-if(p.husbandFirstMarriage)bits.push('First marriage: '+p.husbandFirstMarriage);
+if(p.husbandFirstMarriage)bits.push('First marriage: '+p.husbandFirstMarriage+(p.husbandFirstMarriageNote?' ('+p.husbandFirstMarriageNote+')':''));
 if(p.husbandFirstMarriage==='No'){let off='Offspring: '+(p.husbandOffspring||'N/A');if(p.husbandOffspring==='Yes'){off+=' (Number of offspring: '+(p.husbandOffspringCount||'0')+')';if(p.husbandOffspringMales||p.husbandOffspringFemales)off+=` [Males: ${p.husbandOffspringMales||0}, Females: ${p.husbandOffspringFemales||0}]`;if(p.husbandOffspringNames)off+=' - '+p.husbandOffspringNames;}bits.push(off);}
 return bits.length?bits.join(' | '):'N/A';
 }
@@ -2437,7 +2486,7 @@ function collapseAllAcc(){document.querySelectorAll('#fileModal .acc-body').forE
 function toggleWrap(id,on){const el=$(id);if(el)el.style.display=on?'block':'none';}
 function toggleMenopauseYears(){const sel=$('og_menstrualRegularity');if(!sel)return;toggleWrap('og_menopauseYearsWrap',sel.value==='Menopause');}
 function toggleLabsBox(id,btn){const el=$(id);if(!el)return;const open=el.style.display!=='none';el.style.display=open?'none':'grid';if(btn)btn.textContent=open?'🧪 Show Lab Tests':'🧪 Hide Lab Tests';}
-const PD_FIELDS=['maritalStatus','isFirstMarriage','marriedYears','hasChildren','childrenCount','childrenFemales','childrenMales','childrenNames','husbandName','husbandAge','husbandJob','husbandSmoker','husbandDiseased','husbandDiseaseText','husbandFirstMarriage','husbandOffspring','husbandOffspringCount','husbandOffspringMales','husbandOffspringFemales','husbandOffspringNames'];
+const PD_FIELDS=['maritalStatus','isFirstMarriage','marriedYears','hasChildren','childrenCount','childrenFemales','childrenMales','childrenNames','husbandName','husbandAge','husbandJob','husbandSmoker','husbandDiseased','husbandDiseaseText','husbandFirstMarriage','husbandOffspring','husbandOffspringCount','husbandOffspringMales','husbandOffspringFemales','husbandOffspringNames','isFirstMarriageNote','husbandSmokerNote','husbandFirstMarriageNote'];
 function renderPersonalDetails(){
 if(!filePatient)return;const p=filePatient;
 PD_FIELDS.forEach(k=>{const el=$('pd_'+k);if(el)el.value=p[k]??'';});
@@ -2492,6 +2541,13 @@ function emptyPEntry(){return{name:'',type:'',age:'',gender:'',hospital:'',num:'
 function emptyAEntry(){return{weeks:'',type:'',complication:''};}
 function emptyEEntry(){return{side:'',treatment:'',notes:''};}
 let pEntries=[],aEntries=[],eEntries=[];
+function applyExamMethod(pfx){
+const m=($(pfx==='base'?'og_baseExamMethod':'og_examMethod')||{}).value||'';
+const f=$(pfx==='base'?'og_baseExamFields':'og_examFields'),c=$(pfx==='base'?'og_baseExamClinicalWrap':'og_examClinicalWrap');
+if(f)f.style.display=(m&&m!=='Clinical')?'block':'none';
+if(c)c.style.display=m==='Clinical'?'block':'none';
+}
+
 function addPEntry(entry){pEntries.push(entry||emptyPEntry());renderPEntries();}
 function addAEntry(entry){aEntries.push(entry||emptyAEntry());renderAEntries();}
 function addEEntry(entry){eEntries.push(entry||emptyEEntry());renderEEntries();}
@@ -2514,13 +2570,13 @@ box.innerHTML=eEntries.map((e,i)=>`<div class="gp-entry" data-i="${i}"><div clas
 }
 function syncEEntry(i){const card=document.querySelector('#eEntries .gp-entry[data-i="'+i+'"]');if(!card)return;eEntries[i]={side:card.querySelector('.e-side').value,treatment:card.querySelector('.e-treatment').value.trim(),notes:card.querySelector('.e-notes').value.trim()};}
 let icsiTrials=[];
-function emptyIcsiTrial(){return{date:'',centerDr:'',protocol:'',drugs:'',oocyte:'',m2:'',fertilized:'',embryosTotal:'',embryosDay:'',embryosQuality:'',straws:'',comment:''};}
+function emptyIcsiTrial(){return{date:'',centerDr:'',protocol:'',drugs:'',oocyte:'',m2:'',fertilized:'',embryosTotal:'',embryosDay:'',embryosQuality:'',straws:'',comment:'',result:'',pregOutcome:''};}
 function addIcsiTrial(){icsiTrials.push(emptyIcsiTrial());renderIcsiTrials();}
 function removeIcsiTrial(i){icsiTrials.splice(i,1);renderIcsiTrials();}
 function renderIcsiTrials(){
 const box=$('icsiTrialsList');if(!box)return;
 box.innerHTML=icsiTrials.map((t,i)=>`
-<div class="trial-card">
+<div class="trial-card ${t.result==='Positive'?'iui-positive':(t.result==='Negative'?'iui-negative':'')}">
 <div class="trial-head"><b>🧬 TRIAL ${i+1}</b>${icsiTrials.length>1?`<button type="button" class="btn sm red" onclick="removeIcsiTrial(${i})">✖ Remove</button>`:''}</div>
 <div class="trial-grid">
 <div><label class="flabel">Date</label><input type="date" class="og-input icsi-date" value="${esc(t.date)}" onchange="syncIcsiTrial(${i})"></div>
@@ -2545,14 +2601,26 @@ box.innerHTML=icsiTrials.map((t,i)=>`
 </div>
 </div>
 <label class="flabel">Comment</label><textarea class="og-ta icsi-comment" onchange="syncIcsiTrial(${i})">${esc(t.comment)}</textarea>
+<label class="flabel">Result</label>
+<select class="og-input icsi-result" onchange="syncIcsiTrial(${i});renderIcsiTrials()">
+<option value="">-- Select --</option>
+<option value="Positive" ${t.result==='Positive'?'selected':''}>✅ Positive</option>
+<option value="Negative" ${t.result==='Negative'?'selected':''}>❌ Negative</option>
+</select>
+${t.result==='Positive'?`<label class="flabel">Pregnancy outcome</label>
+<select class="og-input icsi-outcome" onchange="syncIcsiTrial(${i})">
+<option value="">-- Select --</option>
+<option value="Yes" ${t.pregOutcome==='Yes'?'selected':''}>Yes</option>
+<option value="No" ${t.pregOutcome==='No'?'selected':''}>No</option>
+</select>`:''}
 </div>`).join('');
 }
 function syncIcsiTrial(i){
 const card=document.querySelectorAll('#icsiTrialsList .trial-card')[i];if(!card)return;
-icsiTrials[i]={date:card.querySelector('.icsi-date').value,centerDr:card.querySelector('.icsi-center').value.trim(),protocol:card.querySelector('.icsi-protocol').value.trim(),drugs:card.querySelector('.icsi-drugs').value.trim(),oocyte:card.querySelector('.icsi-oocyte').value.trim(),m2:card.querySelector('.icsi-m2').value.trim(),fertilized:card.querySelector('.icsi-fertilized').value.trim(),embryosTotal:card.querySelector('.icsi-embTotal').value.trim(),embryosDay:card.querySelector('.icsi-embDay').value.trim(),embryosQuality:card.querySelector('.icsi-embQuality').value.trim(),straws:card.querySelector('.icsi-straws').value.trim(),comment:card.querySelector('.icsi-comment').value.trim()};
+icsiTrials[i]={date:card.querySelector('.icsi-date').value,centerDr:card.querySelector('.icsi-center').value.trim(),protocol:card.querySelector('.icsi-protocol').value.trim(),drugs:card.querySelector('.icsi-drugs').value.trim(),oocyte:card.querySelector('.icsi-oocyte').value.trim(),m2:card.querySelector('.icsi-m2').value.trim(),fertilized:card.querySelector('.icsi-fertilized').value.trim(),embryosTotal:card.querySelector('.icsi-embTotal').value.trim(),embryosDay:card.querySelector('.icsi-embDay').value.trim(),embryosQuality:card.querySelector('.icsi-embQuality').value.trim(),straws:card.querySelector('.icsi-straws').value.trim(),comment:card.querySelector('.icsi-comment').value.trim(),result:card.querySelector('.icsi-result').value,pregOutcome:card.querySelector('.icsi-result').value==='Positive'?(card.querySelector('.icsi-outcome')?.value||''):''};
 }
 let iuiTrials=[];
-function emptyIuiTrial(){return{date:'',centerDr:'',result:''};}
+function emptyIuiTrial(){return{date:'',centerDr:'',result:'',pregOutcome:''};}
 function addIuiTrial(){iuiTrials.push(emptyIuiTrial());renderIuiTrials();}
 function removeIuiTrial(i){iuiTrials.splice(i,1);renderIuiTrials();}
 function renderIuiTrials(){
@@ -2571,12 +2639,18 @@ return`<div class="trial-card ${cls}">
 <option value="Positive" ${t.result==='Positive'?'selected':''}>✅ Positive</option>
 <option value="Negative" ${t.result==='Negative'?'selected':''}>❌ Negative</option>
 </select>
+${t.result==='Positive'?`<label class="flabel">Pregnancy outcome</label>
+<select class="og-input iui-outcome" onchange="syncIuiTrial(${i})">
+<option value="">-- Select --</option>
+<option value="Yes" ${t.pregOutcome==='Yes'?'selected':''}>Yes</option>
+<option value="No" ${t.pregOutcome==='No'?'selected':''}>No</option>
+</select>`:''}
 </div>`;
 }).join('');
 }
 function syncIuiTrial(i){
 const card=document.querySelectorAll('#iuiTrialsList .trial-card')[i];if(!card)return;
-iuiTrials[i]={date:card.querySelector('.iui-date').value,centerDr:card.querySelector('.iui-center').value.trim(),result:card.querySelector('.iui-result').value};
+const _ir=card.querySelector('.iui-result').value;iuiTrials[i]={date:card.querySelector('.iui-date').value,centerDr:card.querySelector('.iui-center').value.trim(),result:_ir,pregOutcome:_ir==='Positive'?(card.querySelector('.iui-outcome')?.value||''):''};
 }
 function ogDefaults(){
 return{
@@ -2587,12 +2661,12 @@ pastMedical:'',pastSurgical:'',
 infertility:{laparoscopeOn:false,laparoscope:'',hystroscopeOn:false,hystroscope:'',icsiOn:false,icsiTrials:[],iuiOn:false,iuiTrials:[]},
 contraceptive:'',complaint:'',presentHistory:'',
 investigations:{hsg:'',hsgReason:'',uss:'',ussType:'',ussFindings:'',semenOn:false,semen:{date:'',labName:'',volume:'',count:'',progressive:'',normal:''}},
-examination:{method:'',uterus:'',rtAdnexa:'',ltAdnexa:'',pelvis:'',other:''},
+examination:{method:'',clinical:'',uterus:'',rtAdnexa:'',ltAdnexa:'',pelvis:'',other:''},
 impression:'',
 management:{wtReduction:'',drugs:[],labs:[],extraLabs:[],treatmentPlan:''},
 baseComplaint:'',basePresentHistory:'',baseImpression:'',
 baseInvestigation:{hsg:'',hsgReason:'',uss:'',ussType:'',crl:'',gs:'',ga:'',ussFindings:'',semenOn:false,semen:{date:'',labName:'',volume:'',count:'',progressive:'',normal:''},invLabs:[]},
-baseExamination:{method:'',uterus:'',rtAdnexa:'',ltAdnexa:'',pelvis:'',other:''},
+baseExamination:{method:'',clinical:'',uterus:'',rtAdnexa:'',ltAdnexa:'',pelvis:'',other:''},
 baseManagement:{wtReduction:'',drugs:[],labs:[],extraLabs:[],treatmentPlan:''},
 nextVisitDate:'',
 visits:[],
@@ -2682,7 +2756,7 @@ $('og_ob_d').value=og.obstetric.d||'';
 aEntries=og.obstetric.a.length?og.obstetric.a.map(e=>({...e})):[emptyAEntry()];renderAEntries();
 eEntries=og.obstetric.e.length?og.obstetric.e.map(e=>({...e})):[emptyEEntry()];renderEEntries();
 ['G','P','L','D','A','E'].forEach(letter=>{
-const hasData=(!!og.obstetric[letter.toLowerCase()+'Num']||(letter==='G'&&og.obstetric.g)||(letter==='P'&&og.obstetric.p.length)||(letter==='L'&&og.obstetric.l)||(letter==='D'&&og.obstetric.d)||(letter==='A'&&og.obstetric.a.length)||(letter==='E'&&og.obstetric.e.length));
+const hasData=((letter==='G'&&og.obstetric.g)||(letter==='P'&&og.obstetric.p.length)||(letter==='L'&&og.obstetric.l)||(letter==='D'&&og.obstetric.d)||(letter==='A'&&og.obstetric.a.length)||(letter==='E'&&og.obstetric.e.length));
 const el=$('gplade_'+letter);if(el)el.style.display=hasData?'block':'none';
 const btn=document.querySelector('.gplade-btn[data-letter="'+letter+'"]');
 if(btn){btn.classList.toggle('primary',!!hasData);btn.classList.toggle('gray',!hasData);}
@@ -2728,7 +2802,7 @@ $('og_baseSemenPr').value=bInv.semen.progressive||'';
 $('og_baseSemenNormal').value=bInv.semen.normal||'';
 renderBaseInvLabsChecklist(bInv.invLabs||[]);
 $('og_baseExamMethod').value=og.baseExamination.method||'';
-$('og_baseExamFields').style.display=og.baseExamination.method?'block':'none';
+$('og_baseExamClinical').value=og.baseExamination.clinical||'';applyExamMethod('base');
 $('og_baseUterus').value=og.baseExamination.uterus||'';
 $('og_baseRtAdnexa').value=og.baseExamination.rtAdnexa||'';
 $('og_baseLtAdnexa').value=og.baseExamination.ltAdnexa||'';
@@ -2762,7 +2836,7 @@ $('og_semenCount').value=inv.semen.count||'';
 $('og_semenPr').value=inv.semen.progressive||'';
 $('og_semenNormal').value=inv.semen.normal||'';
 $('og_examMethod').value=og.examination.method||'';
-$('og_examFields').style.display=og.examination.method?'block':'none';
+$('og_examClinical').value=og.examination.clinical||'';applyExamMethod('visit');
 $('og_uterus').value=og.examination.uterus||'';
 $('og_rtAdnexa').value=og.examination.rtAdnexa||'';
 $('og_ltAdnexa').value=og.examination.ltAdnexa||'';
@@ -2799,8 +2873,27 @@ function getMedicalFileOnlyData(og){
   return out;
 }
 
+
+/* Save every filled lab-result row together with the medical file / visit (no per-test button). */
+function saveLabRowsFor(rowsSelector){
+if(!filePatient)return 0;let n=0;
+document.querySelectorAll(rowsSelector).forEach(box=>{
+const testName=box.getAttribute('data-test')||'';
+const result=box.querySelector('.lab-result')?.value.trim()||'';
+const unit=box.querySelector('.lab-unit')?.value.trim()||'';
+if(!testName||!result)return;
+const notes=unit?'Unit: '+unit:'';
+const existing=(data.labResults||[]).filter(l=>l.patientId===filePatient.id&&l.testName===testName).sort((a,b)=>(b.ts||0)-(a.ts||0))[0];
+if(existing){if(existing.result===result&&(existing.notes||'')===notes)return;dbPut('labResults',{...existing,result,notes,date:todayStr()});}
+else dbPut('labResults',{id:uid(),patientId:filePatient.id,testName,result,notes,date:todayStr(),ts:Date.now()});
+n++;});
+return n;
+}
+function saveBaseInlineLab(){saveLabRowsFor('#baseInvLabsInlineResults .lab-inline');}
+function saveInlineLab(){saveLabRowsFor('#invLabsInlineResults .lab-inline');}
 function saveOgHistory(){
 if(!filePatient)return;
+saveLabRowsFor('#baseInvLabsInlineResults .lab-inline');
 pEntries.forEach((_,i)=>syncPEntry(i));
 aEntries.forEach((_,i)=>syncAEntry(i));
 eEntries.forEach((_,i)=>syncEEntry(i));
@@ -2809,7 +2902,7 @@ iuiTrials.forEach((_,i)=>syncIuiTrial(i));
 const cleanP=pEntries.filter(e=>e.type||e.age||e.gender||e.hospital||e.num||e.drName||e.complication||e.notes);
 const cleanA=aEntries.filter(e=>e.weeks||e.type||e.complication);
 const cleanE=eEntries.filter(e=>e.side||e.treatment||e.notes);
-const cleanIcsi=icsiTrials.filter(t=>t.date||t.centerDr||t.protocol||t.drugs||t.oocyte||t.m2||t.fertilized||t.embryosTotal||t.straws||t.comment);
+const cleanIcsi=icsiTrials.filter(t=>t.date||t.centerDr||t.protocol||t.drugs||t.oocyte||t.m2||t.fertilized||t.embryosTotal||t.straws||t.comment||t.result);
 const cleanIui=iuiTrials.filter(t=>t.date||t.centerDr||t.result);
 filePatient={...filePatient,...readKeyAlarm()};
 const existingOg=normalizedOg(filePatient);
@@ -2840,7 +2933,7 @@ const ogHistory={
     semen:$('og_baseSemenOn').checked?{date:$('og_baseSemenDate').value,labName:$('og_baseSemenLab').value.trim(),volume:$('og_baseSemenVolume').value.trim(),count:$('og_baseSemenCount').value.trim(),progressive:$('og_baseSemenPr').value.trim(),normal:$('og_baseSemenNormal').value.trim()}:{},
     invLabs:checkedBaseInvLabs
   },
-  baseExamination:{method:$('og_baseExamMethod').value,uterus:$('og_baseUterus').value.trim(),rtAdnexa:$('og_baseRtAdnexa').value.trim(),ltAdnexa:$('og_baseLtAdnexa').value.trim(),pelvis:$('og_basePelvis').value.trim(),other:$('og_baseExamOther').value.trim()}
+  baseExamination:{method:$('og_baseExamMethod').value,clinical:$('og_baseExamMethod').value==='Clinical'?$('og_baseExamClinical').value.trim():'',uterus:$('og_baseUterus').value.trim(),rtAdnexa:$('og_baseRtAdnexa').value.trim(),ltAdnexa:$('og_baseLtAdnexa').value.trim(),pelvis:$('og_basePelvis').value.trim(),other:$('og_baseExamOther').value.trim()}
 };
 filePatient={...filePatient,ogHistory};
 dbPut('patients',{...filePatient,ogHistory});
@@ -2870,11 +2963,10 @@ return`<div class="lab-inline" data-test="${esc(name)}">
 <b style="color:#15803d;font-size:13px">🧪 ${esc(name)}</b>
 <input class="lab-result" placeholder="Result" value="${esc(resVal)}">
 <input class="lab-unit" placeholder="Unit" value="${esc(unitVal)}">
-<button class="btn primary sm" onclick="saveInlineLab('${esc(name).replace(/'/g,"\\'")}')">💾</button>
 </div>`;
 }).join('');
 }
-function saveInlineLab(testName){
+function __oldSaveInlineLab(testName){
 if(!filePatient)return;
 const box=document.querySelector(`#invLabsInlineResults .lab-inline[data-test="${testName}"]`);
 if(!box)return;
@@ -3176,7 +3268,7 @@ set('og_receptionVisitType',visitReceptionType(v)||filePatient?.visitType||'');
 if($('og_receptionVisitPurpose')){const vals=(data.settings.visitPurposes||[]);$('og_receptionVisitPurpose').innerHTML='<option value="">-- اختر --</option>'+vals.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');$('og_receptionVisitPurpose').value=visitReceptionPurpose(v)||filePatient?.visitPurpose||'';}
 set('og_antBp',v.vitals?.bp);set('og_antWt',v.vitals?.wt);set('og_complaint',v.complaint);set('og_impression',v.impression);set('og_blankNotes',v.blankNotes);set('og_keyNotes',v.keyNotes);set('og_presentHistory',v.presentHistory);
 const inv=v.investigations||{};set('og_hsg',inv.hsg);set('og_hsgReason',inv.hsgReason);set('og_uss',inv.uss);set('og_ussType',inv.ussType);set('og_ussCrl',inv.crl);set('og_ussGs',inv.gs);set('og_ussGa',inv.ga);set('og_ussFindings',inv.ussFindings);
-set('og_examMethod',v.examination?.method);set('og_uterus',v.examination?.uterus);set('og_rtAdnexa',v.examination?.rtAdnexa);set('og_ltAdnexa',v.examination?.ltAdnexa);set('og_pelvis',v.examination?.pelvis);set('og_examOther',v.examination?.other);
+set('og_examMethod',v.examination?.method);set('og_examClinical',v.examination?.clinical);applyExamMethod('visit');set('og_uterus',v.examination?.uterus);set('og_rtAdnexa',v.examination?.rtAdnexa);set('og_ltAdnexa',v.examination?.ltAdnexa);set('og_pelvis',v.examination?.pelvis);set('og_examOther',v.examination?.other);
 set('og_folEndo',v.folliculometry?.endo);set('og_folRight',v.folliculometry?.rightOvary);set('og_folLeft',v.folliculometry?.leftOvary);
 window.__editingVisitLabResults=v.investigations?.invLabResults||[];
 renderInvLabsChecklist(v.investigations?.invLabs||[]);
@@ -3347,7 +3439,7 @@ if(inv.invLabResults&&inv.invLabResults.length)inv.invLabResults.forEach((r,ri)=
 if(inv.semenOn&&inv.semen){const s=inv.semen;invHtml+=fld('Semen Date',s.date);invHtml+=fld('Semen Lab',s.labName);invHtml+=fld('Volume (ml)',s.volume);invHtml+=fld('Count (M/ml)',s.count);invHtml+=fld('Progressive %',s.progressive);invHtml+=fld('Normal %',s.normal);}
 let exHtml='';
 const ex=v.examination||{};
-exHtml+=fld('Method',ex.method);
+exHtml+=fld('Method',ex.method);exHtml+=fld('Clinical',ex.clinical);
 exHtml+=fld('Uterus',ex.uterus);
 exHtml+=fld('RT Adnexa',ex.rtAdnexa);
 exHtml+=fld('LT Adnexa',ex.ltAdnexa);
@@ -3472,13 +3564,13 @@ s1+=mfRow('Notes',p.notes);
 out+=mfSection('📋 Personal Details',nextColor(),s1);
 let s2='';
 s2+=mfRow('Marital Status',p.maritalStatus);
-s2+=mfRow('First Marriage?',p.isFirstMarriage);
+s2+=mfRow('First Marriage?',p.isFirstMarriage);s2+=mfRow('First Marriage Notes',p.isFirstMarriageNote);
 if(p.isFirstMarriage==='No'){s2+=mfRow('Has Children?',p.hasChildren);if(p.hasChildren==='Yes'){s2+=mfRow('Number of Children',p.childrenCount);s2+=mfRow('Number of Females',p.childrenFemales);s2+=mfRow('Number of Males',p.childrenMales);s2+=mfRow('Children Names',p.childrenNames);}}
 s2+=mfRow('Married for',p.marriedYears);
-s2+=mfRow('Husband Name',p.husbandName);s2+=mfRow('Husband Age',p.husbandAge);s2+=mfRow('Husband Job',p.husbandJob);s2+=mfRow('Husband Smoker?',p.husbandSmoker);
+s2+=mfRow('Husband Name',p.husbandName);s2+=mfRow('Husband Age',p.husbandAge);s2+=mfRow('Husband Job',p.husbandJob);s2+=mfRow('Husband Smoker?',p.husbandSmoker);s2+=mfRow('Husband Smoker Notes',p.husbandSmokerNote);
 s2+=mfRow('Husband Diseased?',p.husbandDiseased);
 if(p.husbandDiseased==='Yes')s2+=mfRow('Husband Diseases',p.husbandDiseaseText);
-s2+=mfRow('Husband First Marriage?',p.husbandFirstMarriage);
+s2+=mfRow('Husband First Marriage?',p.husbandFirstMarriage);s2+=mfRow('Husband First Marriage Notes',p.husbandFirstMarriageNote);
 if(p.husbandFirstMarriage==='No'){
 s2+=mfRow('Husband Has Other Children?',p.husbandOffspring);
 if(p.husbandOffspring==='Yes'){s2+=mfRow('Husband Number of Children',p.husbandOffspringCount);s2+=mfRow('Number of Males',p.husbandOffspringMales);s2+=mfRow('Number of Females',p.husbandOffspringFemales);s2+=mfRow('Children Names',p.husbandOffspringNames);}
@@ -3501,8 +3593,8 @@ out+=mfSection('🔪 Past Surgical History',nextColor(),mfRow('Surgical History'
 let s8='';
 if(og.infertility?.laparoscopeOn){s8+=mfRow('Laparoscope','Yes');s8+=mfRow('Laparoscope Details',og.infertility?.laparoscope);}
 if(og.infertility?.hystroscopeOn){s8+=mfRow('Hysteroscope','Yes');s8+=mfRow('Hysteroscope Details',og.infertility?.hystroscope);}
-(og.infertility?.icsiTrials||[]).forEach((t,i)=>{let r='';r+=mfRow('Date',t.date);r+=mfRow('Center / Doctor',t.centerDr);r+=mfRow('Protocol',t.protocol);r+=mfRow('Drugs',t.drugs);r+=mfRow('Oocyte',t.oocyte);r+=mfRow('M2',t.m2);r+=mfRow('Fertilized',t.fertilized);r+=mfRow('Total Embryos',t.embryosTotal);r+=mfRow('Embryo Day',t.embryosDay);r+=mfRow('Embryo Quality',t.embryosQuality);r+=mfRow('Straws',t.straws);r+=mfRow('Comment',t.comment);s8+=mfRepeat('ICSI Trial',i,r);});
-(og.infertility?.iuiTrials||[]).forEach((t,i)=>{let r='';r+=mfRow('Date',t.date);r+=mfRow('Center / Doctor',t.centerDr);r+=mfRow('Result',t.result);s8+=mfRepeat('IUI Trial',i,r);});
+(og.infertility?.icsiTrials||[]).forEach((t,i)=>{let r='';r+=mfRow('Date',t.date);r+=mfRow('Center / Doctor',t.centerDr);r+=mfRow('Protocol',t.protocol);r+=mfRow('Drugs',t.drugs);r+=mfRow('Oocyte',t.oocyte);r+=mfRow('M2',t.m2);r+=mfRow('Fertilized',t.fertilized);r+=mfRow('Total Embryos',t.embryosTotal);r+=mfRow('Embryo Day',t.embryosDay);r+=mfRow('Embryo Quality',t.embryosQuality);r+=mfRow('Straws',t.straws);r+=mfRow('Comment',t.comment);r+=mfRow('Result',t.result);if(t.result==='Positive')r+=mfRow('Pregnancy Outcome',t.pregOutcome);s8+=mfRepeat('ICSI Trial',i,r);});
+(og.infertility?.iuiTrials||[]).forEach((t,i)=>{let r='';r+=mfRow('Date',t.date);r+=mfRow('Center / Doctor',t.centerDr);r+=mfRow('Result',t.result);if(t.result==='Positive')r+=mfRow('Pregnancy Outcome',t.pregOutcome);s8+=mfRepeat('IUI Trial',i,r);});
 out+=mfSection('🔬 Infertility Management History',nextColor(),s8);
 out+=mfSection('💊 Contraceptive History',nextColor(),mfRow('Contraceptive History',og.contraceptive));
 out+=mfSection('😟 Complaint',nextColor(),mfRow('Complaint',og.baseComplaint));
@@ -3526,7 +3618,7 @@ if((bInv.invLabs||[]).length)s9+=mfRow('Required Lab Tests',(bInv.invLabs||[]).j
 out+=mfSection('🔬 Investigation',nextColor(),s9);
 let s10='';
 const bEx=og.baseExamination||{};
-s10+=mfRow('Method',bEx.method);s10+=mfRow('Uterus',bEx.uterus);s10+=mfRow('RT Adnexa',bEx.rtAdnexa);s10+=mfRow('LT Adnexa',bEx.ltAdnexa);s10+=mfRow('Pelvis',bEx.pelvis);s10+=mfRow('Other',bEx.other);
+s10+=mfRow('Method',bEx.method);s10+=mfRow('Clinical',bEx.clinical);s10+=mfRow('Uterus',bEx.uterus);s10+=mfRow('RT Adnexa',bEx.rtAdnexa);s10+=mfRow('LT Adnexa',bEx.ltAdnexa);s10+=mfRow('Pelvis',bEx.pelvis);s10+=mfRow('Other',bEx.other);
 out+=mfSection('🔍 Examination',nextColor(),s10);
 out+=mfSection('💡 Impression',nextColor(),mfRow('Impression',og.baseImpression));
 let s11='';
@@ -3579,10 +3671,10 @@ return `<div class="mf-ka" style="display:grid;gap:6px;margin:0 0 12px">${k}${a}
 function mfBanner(p,tag,dt){
 p=p||{};let chips='',gp='';
 try{const o=(getMedicalFileOnlyData(normalizedOg(p)).obstetric)||{};
-gp=['G','P','A','L','E','D'].map(k=>{const v=o[k.toLowerCase()+'Num'];return(v!==undefined&&v!==null&&String(v).trim()!=='')?k+String(v).trim():'';}).filter(Boolean).join('   ');
+gp=['A','P','E','G','L','D'].map(k=>{const v=o[k.toLowerCase()+'Num'];return(v!==undefined&&v!==null&&String(v).trim()!=='')?k+String(v).trim():'';}).filter(Boolean).join('   ');
 }catch(e){}
 const cl=(typeof data!=='undefined'&&data.settings&&data.settings.clinicName)||'';
-return `<div class="mf-header">${cl?`<div class="mf-clinic">${esc(cl)}</div>`:''}<h2>${esc(p.name||'Patient')}</h2><div class="meta">${esc(tag||'')}${dt?' • '+esc(dt):''}</div>${gp?`<div class="mf-gp">${esc(gp)}</div>`:''}</div>${mfKeyAlarmHtml(p)}`;
+return `<div class="mf-header"><div class="meta">${esc(tag||'')}${dt?' • '+esc(dt):''}</div>${gp?`<div class="mf-gp">${esc(gp)}</div>`:''}</div>${mfKeyAlarmHtml(p)}`;
 }
 function mfLCss(L){const g=L.gap/2;
 const T={side:`background:${L.tb}!important;color:${L.tt}!important;border-left:4px solid ${L.tt}!important;border-bottom:0!important`,bar:`background:${L.tt}!important;color:#fff!important;border:0!important`,line:`background:transparent!important;color:${L.tt}!important;border-left:0!important;border-bottom:2px solid ${L.tt}!important`}[L.tst]||'';
@@ -4376,6 +4468,7 @@ $('apptBtnAll').onclick=e=>setApptFilter('all',e.currentTarget);
 $('apptDate').onchange=e=>onApptDate(e.target.value);
 $('newApptBtn').onclick=()=>openPatientModal(null,{date:apptFilter==='date'?apptDateVal:todayStr()});
 $('patDate').onchange=e=>{patDateVal=e.target.value;renderPatients();};
+$('patSearchInp').oninput=e=>{patSearch=e.target.value;renderPatients();};
 $('patPurpose').onchange=e=>{patPurpose=e.target.value;renderPatients();};
 $('patType').onchange=e=>{patType=e.target.value;renderPatients();};
 $('patShowAll').onchange=e=>{patShowAll=e.target.checked;renderPatients();};
@@ -4383,7 +4476,8 @@ $('patResetBtn').onclick=resetPatFilters;
 $('patExportBtn').onclick=exportExcel;
 $('visitsDateFilter').onchange=renderGlobalSavedVisits;
 $('visitsShowAll').onchange=renderGlobalSavedVisits;
-$('visitsResetBtn').onclick=()=>{visitsSearchTerm='';$('visitsDateFilter').value=todayStr();$('visitsShowAll').checked=false;renderGlobalSavedVisits();};
+$('visitsPatientSearch').oninput=e=>{visitsSearchTerm=String(e.target.value||'').trim();renderGlobalSavedVisits();};
+$('visitsResetBtn').onclick=()=>{visitsSearchTerm='';if($('visitsPatientSearch'))$('visitsPatientSearch').value='';$('visitsDateFilter').value=todayStr();$('visitsShowAll').checked=false;renderGlobalSavedVisits();};
 if($('visitsDateFilter'))$('visitsDateFilter').value=todayStr();
 $('mfPatientSearchBtn').onclick=searchMedicalFilePatients;
 $('mfPatientSearch').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();searchMedicalFilePatients();}};
@@ -4424,12 +4518,12 @@ $('rxSaveBtn').onclick=()=>saveRx(false);
 $('rxSavePrintBtn').onclick=()=>saveRx(true);
 $('exportBackupBtn').onclick=exportBackup;
 $('importBackupBtn').onclick=importBackup;
-$('og_examMethod').addEventListener('change',()=>{$('og_examFields').style.display=$('og_examMethod').value?'block':'none';});
+$('og_examMethod').addEventListener('change',()=>applyExamMethod('visit'));
 $('og_hsg').addEventListener('change',()=>toggleWrap('og_hsgReasonWrap',$('og_hsg').value==='Abnormal'));
 $('og_uss').addEventListener('change',()=>toggleWrap('og_ussTypeWrap',$('og_uss').value==='Yes'));
 $('addBaseInvLabTestBtn').onclick=addBaseInvLabTest;
 $('newBaseInvLabTest').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addBaseInvLabTest();}});
-$('og_baseExamMethod').addEventListener('change',()=>{$('og_baseExamFields').style.display=$('og_baseExamMethod').value?'block':'none';});
+$('og_baseExamMethod').addEventListener('change',()=>applyExamMethod('base'));
 $('og_baseHsg').addEventListener('change',()=>toggleWrap('og_baseHsgReasonWrap',$('og_baseHsg').value==='Abnormal'));
 $('og_baseUss').addEventListener('change',()=>toggleWrap('og_baseUssTypeWrap',$('og_baseUss').value==='Yes'));
 bindPdBehaviors();
