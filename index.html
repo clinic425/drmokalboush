@@ -419,15 +419,20 @@ table{min-width:720px}
 #pfEditArea, #visitEditArea, #fileModal .set-card, #pfKeyAlarm { direction:ltr; text-align:left; }
 #pfEditArea input, #pfEditArea select, #pfEditArea textarea,
 #visitEditArea input, #visitEditArea select, #visitEditArea textarea { direction:ltr; text-align:left; }
-#pfEditArea .acc, #visitEditArea .acc { border:1.5px solid #c4b5fd; border-radius:10px; background:#faf5ff; }
-#pfEditArea .acc-head, #visitEditArea .acc-head,
-#pfEditArea .acc.nested>.acc-head, #visitEditArea .acc.nested>.acc-head { background:linear-gradient(90deg,#6d28d9,#8b5cf6)!important; }
+#pfEditArea .acc, #visitEditArea .acc { border:1.5px solid #fcd34d; border-radius:10px; background:#fffbeb; }
+#pfEditArea .acc .acc, #visitEditArea .acc .acc { border-color:#5eead4; background:#f0fdfa; }
+#pfEditArea .acc-head, #visitEditArea .acc-head { background:linear-gradient(90deg,#1e40af,#3b82f6)!important; }
+#pfEditArea .acc.nested>.acc-head, #visitEditArea .acc.nested>.acc-head { background:linear-gradient(90deg,#0f766e,#14b8a6)!important; }
 #pfEditArea .acc-head:hover, #visitEditArea .acc-head:hover { filter:brightness(1.08); }
+/* === per-section header colors (each head differs from the one below it) === */
+#pfEditArea .acc-head, #visitEditArea .acc-head { transition: filter .15s; }
+#pfEditArea .acc, #visitEditArea .acc { border-width:1.5px; }
+
 #pfEditArea .acc-head h4, #visitEditArea .acc-head h4 { color:#fff!important; }
 #pfEditArea .acc-ic, #visitEditArea .acc-ic { color:#fff!important; }
-#pfEditArea .acc-body, #visitEditArea .acc-body { background:#f5f3ff; border-top:0; }
-#pfEditArea .acc-body .acc-body, #visitEditArea .acc-body .acc-body { background:#ede9fe; }
-#pfEditArea .og-input, #pfEditArea .og-ta, #visitEditArea .og-input, #visitEditArea .og-ta { background:#fff; border-color:#c4b5fd; }
+#pfEditArea .acc-body, #visitEditArea .acc-body { background:#fef9c3; border-top:0; }
+#pfEditArea .acc-body .acc-body, #visitEditArea .acc-body .acc-body { background:#ccfbf1; }
+#pfEditArea .og-input, #pfEditArea .og-ta, #visitEditArea .og-input, #visitEditArea .og-ta { background:#fff; border-color:#d1d5db; }
 /* Complaint = its own colour */
 #pfEditArea .acc-complaint, #visitEditArea .acc-complaint { border-color:#fdba74; background:#fff7ed; }
 #pfEditArea .acc.nested.acc-complaint>.acc-head, #visitEditArea .acc.nested.acc-complaint>.acc-head { background:linear-gradient(90deg,#c2410c,#f97316)!important; }
@@ -682,9 +687,11 @@ table{min-width:720px}
 <div class="acc-body" id="accMarital" style="display:none">
 <label class="flabel">Marital Status</label>
 <select id="pd_maritalStatus" class="og-input"><option value="">-- Select --</option><option>Virgin</option><option>Married</option><option>Divorced</option><option>Widow</option></select>
+<div id="pd_firstMarriageWrap">
 <label class="flabel">First Marriage?</label>
 <select id="pd_isFirstMarriage" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
 <textarea id="pd_isFirstMarriageNote" class="og-ta pd-note" rows="2" placeholder="Add details..."></textarea>
+</div>
 <div id="pd_offspringWrap" class="cond-box" style="display:none">
 <label class="flabel">Offspring?</label>
 <select id="pd_hasChildren" class="og-input"><option value="">-- Select --</option><option>Yes</option><option>No</option></select>
@@ -699,11 +706,13 @@ table{min-width:720px}
 <input id="pd_childrenNames" class="og-input" placeholder="e.g. Ahmed, Sara, Omar">
 </div>
 </div>
+<div id="pd_marriedWrap">
 <label class="flabel">Married for</label>
 <input id="pd_marriedYears" class="og-input" placeholder="e.g. 3 years">
 </div>
 </div>
-<div class="acc nested">
+</div>
+<div class="acc nested" id="accHusbandWrap">
 <div class="acc-head" onclick="toggleAcc('accHusband')"><h4>🤵 Husband Details</h4><span class="acc-ic" id="ic-accHusband">▾</span></div>
 <div class="acc-body" id="accHusband" style="display:none">
 <div class="three-col">
@@ -2434,7 +2443,7 @@ function openFileView(){
 }
 function maritalSummary(p){
 p=p||{};let s=p.maritalStatus||'N/A';
-if(p.isFirstMarriage)s+=` | First marriage: ${p.isFirstMarriage}`+(p.isFirstMarriageNote?` (${p.isFirstMarriageNote})`:'');
+if(p.maritalStatus!=='Virgin'&&p.isFirstMarriage)s+=` | First marriage: ${p.isFirstMarriage}`+(p.isFirstMarriageNote?` (${p.isFirstMarriageNote})`:'');
 if(p.isFirstMarriage==='No'){s+=` | Offspring: ${p.hasChildren||'N/A'}`;if(p.hasChildren==='Yes')s+=` (${p.childrenCount||'0'})`;}
 return s;
 }
@@ -2480,6 +2489,7 @@ function renderPfIdentity(){
 if(!filePatient)return;const p=filePatient;
 $('pfIdentity').innerHTML=`<div>Name: <b>${esc(p.name||'—')}</b></div><div>Visit Purpose: <b>${esc(p.visitPurpose||'—')}</b></div><div>Visit Type: <b>${esc(p.visitType||'—')}</b></div>`;
 }
+
 function toggleAcc(id){const body=$(id);if(!body)return;const open=body.style.display!=='none';body.style.display=open?'none':'block';const ic=$('ic-'+id);if(ic)ic.textContent=open?'▾':'▴';}
 function collapseAcc(id){const body=$(id);if(!body)return;body.style.display='none';const ic=$('ic-'+id);if(ic)ic.textContent='▾';}
 function collapseAllAcc(){document.querySelectorAll('#fileModal .acc-body').forEach(b=>{if(b.id)collapseAcc(b.id);});}
@@ -2493,20 +2503,25 @@ PD_FIELDS.forEach(k=>{const el=$('pd_'+k);if(el)el.value=p[k]??'';});
 applyPdConditionals();
 }
 function applyPdConditionals(){
-const notFirst=$('pd_isFirstMarriage').value==='No';
+const virgin=$('pd_maritalStatus').value==='Virgin';
+toggleWrap('pd_firstMarriageWrap',!virgin);
+toggleWrap('pd_marriedWrap',!virgin);
+toggleWrap('accHusbandWrap',!virgin);
+const notFirst=!virgin&&$('pd_isFirstMarriage').value==='No';
 toggleWrap('pd_offspringWrap',notFirst);
 toggleWrap('pd_offspringCountWrap',notFirst&&$('pd_hasChildren').value==='Yes');
 toggleWrap('pd_husbandDiseaseWrap',$('pd_husbandDiseased').value==='Yes');
-const hNotFirst=$('pd_husbandFirstMarriage').value==='No';
+const hNotFirst=!virgin&&$('pd_husbandFirstMarriage').value==='No';
 toggleWrap('pd_husbandOffspringWrap',hNotFirst);
 toggleWrap('pd_husbandOffspringCountWrap',hNotFirst&&$('pd_husbandOffspring').value==='Yes');
 }
 function bindPdBehaviors(){
-['pd_isFirstMarriage','pd_hasChildren','pd_husbandDiseased','pd_husbandFirstMarriage','pd_husbandOffspring'].forEach(id=>{const el=$(id);if(el)el.addEventListener('change',applyPdConditionals);});
+['pd_maritalStatus','pd_isFirstMarriage','pd_hasChildren','pd_husbandDiseased','pd_husbandFirstMarriage','pd_husbandOffspring'].forEach(id=>{const el=$(id);if(el)el.addEventListener('change',applyPdConditionals);});
 }
 async function savePersonalDetails(){
 if(!filePatient)return;
 const patch={};PD_FIELDS.forEach(k=>{const el=$('pd_'+k);patch[k]=el?el.value.trim():'';});
+if(patch.maritalStatus==='Virgin'){['isFirstMarriage','isFirstMarriageNote','marriedYears','hasChildren','childrenCount','childrenFemales','childrenMales','childrenNames','husbandName','husbandAge','husbandJob','husbandSmoker','husbandSmokerNote','husbandDiseased','husbandDiseaseText','husbandFirstMarriage','husbandFirstMarriageNote','husbandOffspring','husbandOffspringCount','husbandOffspringMales','husbandOffspringFemales','husbandOffspringNames'].forEach(k=>{patch[k]='';});}
 if(patch.isFirstMarriage!=='No'){patch.hasChildren='';patch.childrenCount='';patch.childrenFemales='';patch.childrenMales='';patch.childrenNames='';}
 else if(patch.hasChildren!=='Yes'){patch.childrenCount='';patch.childrenFemales='';patch.childrenMales='';patch.childrenNames='';}
 if(patch.husbandDiseased!=='Yes')patch.husbandDiseaseText='';
@@ -2570,7 +2585,7 @@ box.innerHTML=eEntries.map((e,i)=>`<div class="gp-entry" data-i="${i}"><div clas
 }
 function syncEEntry(i){const card=document.querySelector('#eEntries .gp-entry[data-i="'+i+'"]');if(!card)return;eEntries[i]={side:card.querySelector('.e-side').value,treatment:card.querySelector('.e-treatment').value.trim(),notes:card.querySelector('.e-notes').value.trim()};}
 let icsiTrials=[];
-function emptyIcsiTrial(){return{date:'',centerDr:'',protocol:'',drugs:'',oocyte:'',m2:'',fertilized:'',embryosTotal:'',embryosDay:'',embryosQuality:'',straws:'',comment:'',result:'',pregOutcome:''};}
+function emptyIcsiTrial(){return{pregOutcomeNote:'',date:'',centerDr:'',protocol:'',drugs:'',oocyte:'',m2:'',fertilized:'',embryosTotal:'',embryosDay:'',embryosQuality:'',straws:'',comment:'',result:'',pregOutcome:''};}
 function addIcsiTrial(){icsiTrials.push(emptyIcsiTrial());renderIcsiTrials();}
 function removeIcsiTrial(i){icsiTrials.splice(i,1);renderIcsiTrials();}
 function renderIcsiTrials(){
@@ -2612,15 +2627,17 @@ ${t.result==='Positive'?`<label class="flabel">Pregnancy outcome</label>
 <option value="">-- Select --</option>
 <option value="Yes" ${t.pregOutcome==='Yes'?'selected':''}>Yes</option>
 <option value="No" ${t.pregOutcome==='No'?'selected':''}>No</option>
-</select>`:''}
+</select>
+<label class="flabel">Notes (ملاحظات)</label>
+<textarea class="og-ta icsi-outcome-note" rows="2" placeholder="ملاحظات عن نتيجة الحمل..." onchange="syncIcsiTrial(${i})">${esc(t.pregOutcomeNote)}</textarea>`:''}
 </div>`).join('');
 }
 function syncIcsiTrial(i){
 const card=document.querySelectorAll('#icsiTrialsList .trial-card')[i];if(!card)return;
-icsiTrials[i]={date:card.querySelector('.icsi-date').value,centerDr:card.querySelector('.icsi-center').value.trim(),protocol:card.querySelector('.icsi-protocol').value.trim(),drugs:card.querySelector('.icsi-drugs').value.trim(),oocyte:card.querySelector('.icsi-oocyte').value.trim(),m2:card.querySelector('.icsi-m2').value.trim(),fertilized:card.querySelector('.icsi-fertilized').value.trim(),embryosTotal:card.querySelector('.icsi-embTotal').value.trim(),embryosDay:card.querySelector('.icsi-embDay').value.trim(),embryosQuality:card.querySelector('.icsi-embQuality').value.trim(),straws:card.querySelector('.icsi-straws').value.trim(),comment:card.querySelector('.icsi-comment').value.trim(),result:card.querySelector('.icsi-result').value,pregOutcome:card.querySelector('.icsi-result').value==='Positive'?(card.querySelector('.icsi-outcome')?.value||''):''};
+icsiTrials[i]={date:card.querySelector('.icsi-date').value,centerDr:card.querySelector('.icsi-center').value.trim(),protocol:card.querySelector('.icsi-protocol').value.trim(),drugs:card.querySelector('.icsi-drugs').value.trim(),oocyte:card.querySelector('.icsi-oocyte').value.trim(),m2:card.querySelector('.icsi-m2').value.trim(),fertilized:card.querySelector('.icsi-fertilized').value.trim(),embryosTotal:card.querySelector('.icsi-embTotal').value.trim(),embryosDay:card.querySelector('.icsi-embDay').value.trim(),embryosQuality:card.querySelector('.icsi-embQuality').value.trim(),straws:card.querySelector('.icsi-straws').value.trim(),comment:card.querySelector('.icsi-comment').value.trim(),result:card.querySelector('.icsi-result').value,pregOutcome:card.querySelector('.icsi-result').value==='Positive'?(card.querySelector('.icsi-outcome')?.value||''):'',pregOutcomeNote:card.querySelector('.icsi-result').value==='Positive'?(card.querySelector('.icsi-outcome-note')?.value.trim()||''):''};
 }
 let iuiTrials=[];
-function emptyIuiTrial(){return{date:'',centerDr:'',result:'',pregOutcome:''};}
+function emptyIuiTrial(){return{pregOutcomeNote:'',date:'',centerDr:'',result:'',pregOutcome:''};}
 function addIuiTrial(){iuiTrials.push(emptyIuiTrial());renderIuiTrials();}
 function removeIuiTrial(i){iuiTrials.splice(i,1);renderIuiTrials();}
 function renderIuiTrials(){
@@ -2644,13 +2661,15 @@ ${t.result==='Positive'?`<label class="flabel">Pregnancy outcome</label>
 <option value="">-- Select --</option>
 <option value="Yes" ${t.pregOutcome==='Yes'?'selected':''}>Yes</option>
 <option value="No" ${t.pregOutcome==='No'?'selected':''}>No</option>
-</select>`:''}
+</select>
+<label class="flabel">Notes (ملاحظات)</label>
+<textarea class="og-ta iui-outcome-note" rows="2" placeholder="ملاحظات عن نتيجة الحمل..." onchange="syncIuiTrial(${i})">${esc(t.pregOutcomeNote)}</textarea>`:''}
 </div>`;
 }).join('');
 }
 function syncIuiTrial(i){
 const card=document.querySelectorAll('#iuiTrialsList .trial-card')[i];if(!card)return;
-const _ir=card.querySelector('.iui-result').value;iuiTrials[i]={date:card.querySelector('.iui-date').value,centerDr:card.querySelector('.iui-center').value.trim(),result:_ir,pregOutcome:_ir==='Positive'?(card.querySelector('.iui-outcome')?.value||''):''};
+const _ir=card.querySelector('.iui-result').value;iuiTrials[i]={date:card.querySelector('.iui-date').value,centerDr:card.querySelector('.iui-center').value.trim(),result:_ir,pregOutcome:_ir==='Positive'?(card.querySelector('.iui-outcome')?.value||''):'',pregOutcomeNote:_ir==='Positive'?(card.querySelector('.iui-outcome-note')?.value.trim()||''):''};
 }
 function ogDefaults(){
 return{
@@ -3564,6 +3583,7 @@ s1+=mfRow('Notes',p.notes);
 out+=mfSection('📋 Personal Details',nextColor(),s1);
 let s2='';
 s2+=mfRow('Marital Status',p.maritalStatus);
+if(p.maritalStatus!=='Virgin'){
 s2+=mfRow('First Marriage?',p.isFirstMarriage);s2+=mfRow('First Marriage Notes',p.isFirstMarriageNote);
 if(p.isFirstMarriage==='No'){s2+=mfRow('Has Children?',p.hasChildren);if(p.hasChildren==='Yes'){s2+=mfRow('Number of Children',p.childrenCount);s2+=mfRow('Number of Females',p.childrenFemales);s2+=mfRow('Number of Males',p.childrenMales);s2+=mfRow('Children Names',p.childrenNames);}}
 s2+=mfRow('Married for',p.marriedYears);
@@ -3574,6 +3594,7 @@ s2+=mfRow('Husband First Marriage?',p.husbandFirstMarriage);s2+=mfRow('Husband F
 if(p.husbandFirstMarriage==='No'){
 s2+=mfRow('Husband Has Other Children?',p.husbandOffspring);
 if(p.husbandOffspring==='Yes'){s2+=mfRow('Husband Number of Children',p.husbandOffspringCount);s2+=mfRow('Number of Males',p.husbandOffspringMales);s2+=mfRow('Number of Females',p.husbandOffspringFemales);s2+=mfRow('Children Names',p.husbandOffspringNames);}
+}
 }
 out+=mfSection('👨‍👩‍👧 Marital Status & Husband Details',nextColor(),s2);
 let s3='';
@@ -3593,8 +3614,8 @@ out+=mfSection('🔪 Past Surgical History',nextColor(),mfRow('Surgical History'
 let s8='';
 if(og.infertility?.laparoscopeOn){s8+=mfRow('Laparoscope','Yes');s8+=mfRow('Laparoscope Details',og.infertility?.laparoscope);}
 if(og.infertility?.hystroscopeOn){s8+=mfRow('Hysteroscope','Yes');s8+=mfRow('Hysteroscope Details',og.infertility?.hystroscope);}
-(og.infertility?.icsiTrials||[]).forEach((t,i)=>{let r='';r+=mfRow('Date',t.date);r+=mfRow('Center / Doctor',t.centerDr);r+=mfRow('Protocol',t.protocol);r+=mfRow('Drugs',t.drugs);r+=mfRow('Oocyte',t.oocyte);r+=mfRow('M2',t.m2);r+=mfRow('Fertilized',t.fertilized);r+=mfRow('Total Embryos',t.embryosTotal);r+=mfRow('Embryo Day',t.embryosDay);r+=mfRow('Embryo Quality',t.embryosQuality);r+=mfRow('Straws',t.straws);r+=mfRow('Comment',t.comment);r+=mfRow('Result',t.result);if(t.result==='Positive')r+=mfRow('Pregnancy Outcome',t.pregOutcome);s8+=mfRepeat('ICSI Trial',i,r);});
-(og.infertility?.iuiTrials||[]).forEach((t,i)=>{let r='';r+=mfRow('Date',t.date);r+=mfRow('Center / Doctor',t.centerDr);r+=mfRow('Result',t.result);if(t.result==='Positive')r+=mfRow('Pregnancy Outcome',t.pregOutcome);s8+=mfRepeat('IUI Trial',i,r);});
+(og.infertility?.icsiTrials||[]).forEach((t,i)=>{let r='';r+=mfRow('Date',t.date);r+=mfRow('Center / Doctor',t.centerDr);r+=mfRow('Protocol',t.protocol);r+=mfRow('Drugs',t.drugs);r+=mfRow('Oocyte',t.oocyte);r+=mfRow('M2',t.m2);r+=mfRow('Fertilized',t.fertilized);r+=mfRow('Total Embryos',t.embryosTotal);r+=mfRow('Embryo Day',t.embryosDay);r+=mfRow('Embryo Quality',t.embryosQuality);r+=mfRow('Straws',t.straws);r+=mfRow('Comment',t.comment);r+=mfRow('Result',t.result);if(t.result==='Positive'){r+=mfRow('Pregnancy Outcome',t.pregOutcome);r+=mfRow('Pregnancy Outcome Notes',t.pregOutcomeNote);}s8+=mfRepeat('ICSI Trial',i,r);});
+(og.infertility?.iuiTrials||[]).forEach((t,i)=>{let r='';r+=mfRow('Date',t.date);r+=mfRow('Center / Doctor',t.centerDr);r+=mfRow('Result',t.result);if(t.result==='Positive'){r+=mfRow('Pregnancy Outcome',t.pregOutcome);r+=mfRow('Pregnancy Outcome Notes',t.pregOutcomeNote);}s8+=mfRepeat('IUI Trial',i,r);});
 out+=mfSection('🔬 Infertility Management History',nextColor(),s8);
 out+=mfSection('💊 Contraceptive History',nextColor(),mfRow('Contraceptive History',og.contraceptive));
 out+=mfSection('😟 Complaint',nextColor(),mfRow('Complaint',og.baseComplaint));
