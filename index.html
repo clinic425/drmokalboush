@@ -2437,7 +2437,7 @@ function openFileView(){
   if(!filePatient)return;
   const target=openMedicalFileViewOverlay();
   target.title.textContent=`📄 Medical File — ${filePatient.name||'Patient'}`;
-  target.content.innerHTML=buildLiveFileViewHtml();
+  target.content.innerHTML=buildLiveFileViewHtml()+vsStackHtml(filePatient.id,{actions:false,withFile:false});
   target.editBtn.onclick=()=>{target.close();setPfMode('edit');};
   target.printBtn.onclick=()=>printPatientFile();
 }
@@ -3104,7 +3104,7 @@ function addVisitForPatient(patientId){
  openAddVisitChoice();
 }
 let visitsSearchTerm='';
-function showPatientVisits(patientId){
+async function showPatientVisits(patientId){
  const p=(data.patients||[]).find(x=>x.id===patientId);
  if(!p)return;
  const inp=$('visitsPatientSearch');
@@ -3112,7 +3112,9 @@ function showPatientVisits(patientId){
  visitsSearchTerm=String(p.name||'').trim();
  const d=$('visitsDateFilter');if(d)d.value='';
  const all=$('visitsShowAll');if(all)all.checked=true;
- renderGlobalSavedVisits();
+ await renderGlobalSavedVisits();
+ const b=document.querySelector('#globalSavedVisitsList .vs-bar button');
+ if(b)await vsAll(b,true);
 }
 function searchVisitsByName(){
  const inp=$('visitsPatientSearch');
@@ -3140,6 +3142,149 @@ function getVisitPagePatients(){
  return list.filter(p=>{if(!p?.id||seen.has(p.id))return false;seen.add(p.id);return true;})
    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ar'));
 }
+
+/* ============ Inline (accordion) medical file + visits stack ============ */
+let __vsN=0;
+function vsScopeCss(css,sid){
+  css=String(css||'').replace(/@media\s+print\s*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g,'');
+  return css.replace(/([^{}]+)\{([^{}]*)\}/g,(m,sel,body)=>sel.split(',').map(x=>'#'+sid+' '+x.trim()).join(',')+'{'+body+'}');
+}
+function vsScoped(html){
+  const sid='vsScope'+(++__vsN);
+  const t=document.createElement('div');t.innerHTML=html;
+  t.querySelectorAll('style').forEach(st=>{st.textContent=vsScopeCss(st.textContent,sid);});
+  const maxw=(function(){try{return mfLGet().maxw||900;}catch(e){return 900;}})();
+  return `<div id="${sid}" class="pf-view-scope vs-scope" dir="ltr" style="direction:ltr;text-align:left;max-width:${maxw}px;margin:0 auto">${t.innerHTML}</div>`;
+}
+function vsVisitList(pid){
+  return (data.medicalFiles||[]).filter(mf=>mf.patientId===pid&&mf.data&&mf.data.visit).sort((a,b)=>{
+    const ad=a.data.visit.visitDate||'',bd=b.data.visit.visitDate||'';
+    return ad.localeCompare(bd)||(a.data.visit.visitNumber||0)-(b.data.visit.visitNumber||0)||(a.timestamp||0)-(b.timestamp||0);
+  });
+}
+function vsItemHtml(kind,id,pid,title,sub,actions){
+  const act=(kind==='visit'&&actions)?`<button class="btn sm gray" type="button" onclick="event.stopPropagation();openVisitEdit('${id}')">✏️</button><button class="btn sm blue" type="button" onclick="event.stopPropagation();openVisitPrint('${id}')">🖨</button><button class="btn sm red" type="button" onclick="event.stopPropagation();openVisitDelete('${id}')">🗑</button>`
+    :(kind==='visit'?`<button class="btn sm blue" type="button" onclick="event.stopPropagation();openVisitPrint('${id}')">🖨</button>`
+    :`<button class="btn sm blue" type="button" onclick="event.stopPropagation();printPatientFileById('${pid}')">🖨</button>`);
+  return `<div class="vs-item vs-${kind}" data-kind="${kind}" data-id="${esc(id)}" data-pid="${esc(pid)}">
+  <div class="vs-head" onclick="vsToggle(this)">
+    <div class="vs-title"><b>${title}</b><div class="vs-sub">${sub}</div></div>
+    <div class="vs-btns"><button class="btn sm primary vs-tg" type="button" onclick="event.stopPropagation();vsToggle(this)">👁 إظهار</button>${act}</div>
+  </div>
+  <div class="vs-body" hidden></div>
+</div>`;
+}
+function vsStackHtml(pid,opts){
+  opts=opts||{};
+  const p=(data.patients||[]).find(x=>x.id===pid)||{};
+  const visits=vsVisitList(pid);
+  const parts=[];
+  if(opts.withFile){
+    const has=!!(p.ogHistory&&Object.keys(p.ogHistory||{}).length);
+    parts.push(vsItemHtml('file',('file-'+pid),pid,'📁 الملف الطبي الدائم',has?'بيانات المريضة الأساسية والتاريخ المرضي':'لم يتم حفظ بيانات الملف الطبي بعد',opts.actions));
+  }
+  visits.forEach((mf,i)=>{
+    const v=mf.data.visit||{};
+    const ic={Antenatal:'🤰',Gynae:'🩺',Folliculometry:'🔬',Blank:'📝'}[visitClinicalLabel(v)]||'📝';
+    const title=`${ic} Visit ${v.visitNumber||i+1}: ${esc(v.visitName||visitClinicalLabel(v)||'زيارة')}`;
+    const sub=`📅 ${esc(v.visitDate?fmtDate(v.visitDate):'—')} • 🩺 ${esc(visitReceptionType(v)||'—')} • 🎯 ${esc(visitReceptionPurpose(v)||'—')}${v.nextVisitDate?' • 🔜 '+esc(fmtDate(v.nextVisitDate)):''}`;
+    parts.push(vsItemHtml('visit',mf.id,pid,title,sub,opts.actions));
+  });
+  if(!visits.length&&!opts.withFile)return `<div class="vs-wrap"><div class="vs-empty">🗂️ لا توجد زيارات محفوظة لهذه الحالة</div></div>`;
+  if(!visits.length)parts.push(`<div class="vs-empty">🗂️ لا توجد زيارات محفوظة بعد</div>`);
+  const sep='<div class="vs-sep"><span>• • •</span></div>';
+  const bar=(visits.length||opts.withFile)?`<div class="vs-bar"><b>🗂️ الملف الطبي والزيارات (${visits.length})</b><span><button class="btn sm blue" type="button" onclick="vsAll(this,true)">📖 إظهار الكل</button> <button class="btn sm gray" type="button" onclick="vsAll(this,false)">🙈 إخفاء الكل</button></span></div>`:'';
+  return `<div class="vs-wrap">${opts.withFile?'':'<div class="vs-line"></div>'}${bar}${parts.join(sep)}</div>`;
+}
+async function vsFill(item){
+  const body=item.querySelector('.vs-body');
+  if(!body||body.dataset.done==='1')return true;
+  body.innerHTML='<div class="vs-loading">⏳ جارٍ التحميل...</div>';
+  try{
+    let html='';
+    if(item.dataset.kind==='file'){
+      const p=(data.patients||[]).find(x=>x.id===item.dataset.pid);
+      if(!p)throw new Error('patient missing');
+      html=renderMedicalFileFrameHtml(p,p.ogHistorySavedAt||p.updatedAt||p.createdAt);
+      html=vsScoped(html);
+    }else{
+      const mf=await ensureVisitRecord(item.dataset.id);
+      if(!mf||!mf.data?.visit)throw new Error('visit missing');
+      const p=(data.patients||[]).find(x=>x.id===mf.patientId)||{};
+      const tg={htmlOnly:true,content:document.createElement('div'),title:{},editBtn:{style:{}},printBtn:{style:{}},deleteBtn:{style:{}},close(){}};
+      viewQuickVisitProfessional(mf,mf.data.visit,p,tg);
+      html=vsScoped(tg.content.innerHTML);
+    }
+    body.innerHTML=html;body.dataset.done='1';
+    const nx=vsNextItem(item);
+    if(item.dataset.kind==='visit'||nx){
+      if(nx)body.insertAdjacentHTML('beforeend',`<div class="vs-nextbar"><button class="btn sm primary" type="button" onclick="vsNext(this)">⬇ إظهار الزيارة التالية</button></div>`);
+    }
+    return true;
+  }catch(e){
+    console.error('vsFill failed',e);
+    body.innerHTML='<div class="vs-loading" style="color:#b91c1c">❌ تعذر عرض البيانات</div>';
+    return false;
+  }
+}
+function vsNextItem(item){
+  let n=item.nextElementSibling;
+  while(n&&!n.classList.contains('vs-item'))n=n.nextElementSibling;
+  return n||null;
+}
+async function vsSet(item,open){
+  const body=item.querySelector('.vs-body'),btn=item.querySelector('.vs-tg');
+  if(open){
+    body.hidden=false;item.classList.add('open');
+    if(btn)btn.textContent='🙈 إخفاء';
+    await vsFill(item);
+  }else{
+    body.hidden=true;item.classList.remove('open');
+    if(btn)btn.textContent='👁 إظهار';
+  }
+}
+function vsToggle(el){
+  const item=el.closest('.vs-item');if(!item)return;
+  vsSet(item,item.querySelector('.vs-body').hidden);
+}
+async function vsNext(btn){
+  const item=btn.closest('.vs-item');const nx=item&&vsNextItem(item);if(!nx)return;
+  await vsSet(nx,true);
+  setTimeout(()=>nx.scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+async function vsAll(btn,open){
+  const wrap=btn.closest('.vs-wrap');if(!wrap)return;
+  const items=[...wrap.querySelectorAll('.vs-item')];
+  for(const it of items)await vsSet(it,open);
+}
+function printPatientFileById(pid){
+  const p=(data.patients||[]).find(x=>x.id===pid);if(!p)return;
+  const prev=filePatient;filePatient=p;
+  try{printPatientFile();}finally{filePatient=prev;}
+}
+(function(){
+  const st=document.createElement('style');
+  st.textContent=`
+.vs-wrap{margin-top:12px;direction:rtl;text-align:right}
+.vs-line{height:0;border-top:2px dashed #c4b5fd;margin:18px 0 14px}
+.vs-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;color:#4338ca;font-size:14px}
+.vs-item{border:1.5px solid #c7d2fe;border-radius:12px;background:#fff;overflow:hidden}
+.vs-item.vs-file{border-color:#f9a8d4}
+.vs-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 12px;background:linear-gradient(90deg,#eef2ff,#fdf2f8);cursor:pointer}
+.vs-item.vs-file>.vs-head{background:linear-gradient(90deg,#fdf2f8,#faf5ff)}
+.vs-item.open>.vs-head{border-bottom:1.5px solid #c7d2fe}
+.vs-title{min-width:200px;flex:1;color:#1e1b4b}
+.vs-sub{font-size:12px;color:#475569;margin-top:3px}
+.vs-btns{display:flex;gap:5px;flex-wrap:wrap}
+.vs-body{padding:10px;background:#f8fafc}
+.vs-sep{display:flex;align-items:center;gap:10px;margin:14px 0;color:#a5b4fc;font-size:12px;font-weight:900;letter-spacing:4px}
+.vs-sep::before,.vs-sep::after{content:"";flex:1;border-top:2px dashed #c7d2fe}
+.vs-empty,.vs-loading{padding:10px 12px;color:#64748b;background:#f8fafc;border-radius:8px;text-align:center}
+.vs-nextbar{text-align:center;margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1}
+.vs-scope .lab-result-actions{display:none!important}
+`;
+  document.head.appendChild(st);
+})();
 async function renderGlobalSavedVisits(){
  const box=$('globalSavedVisitsList');
  if(!box)return;
@@ -3159,24 +3304,7 @@ async function renderGlobalSavedVisits(){
        return bd.localeCompare(ad)||(b.data.visit.visitNumber||0)-(a.data.visit.visitNumber||0)||(b.timestamp||0)-(a.timestamp||0);
      });
    const latest=saved[0]?.data?.visit;
-   const visitHtml=saved.length?saved.map((mf,vi)=>{
-     const v=mf.data.visit||{};
-     const label=v.visitName||visitClinicalLabel(v)||'زيارة';
-     const reception=visitReceptionType(v)||'—';
-     const purpose=visitReceptionPurpose(v)||'—';
-     return `<div class="mf-item" style="margin:7px 0 0 0;background:#f8fafc;border:1px solid #e2e8f0;align-items:center">
-       <div class="mf-info">
-         <div class="mf-comment"><b>Visit ${v.visitNumber||vi+1}: ${esc(label)}</b></div>
-         <div style="font-size:12px;color:#475569;margin-top:3px">📅 ${esc(v.visitDate?fmtDate(v.visitDate):'—')} • 🩺 ${esc(reception)} • 🎯 ${esc(purpose)}${v.nextVisitDate?' • 🔜 '+esc(fmtDate(v.nextVisitDate)):''}</div>
-       </div>
-       <div class="mf-actions" style="display:flex;gap:5px;flex-wrap:wrap">
-         <button class="btn sm blue" type="button" onclick="event.stopPropagation();openVisitView('${mf.id}')">👁 View</button>
-         <button class="btn sm gray" type="button" onclick="event.stopPropagation();openVisitEdit('${mf.id}')">✏️ Edit</button>
-         <button class="btn sm blue" type="button" onclick="event.stopPropagation();openVisitPrint('${mf.id}')">🖨</button>
-         <button class="btn sm red" type="button" onclick="event.stopPropagation();openVisitDelete('${mf.id}')">🗑 Delete</button>
-       </div>
-     </div>`;
-   }).join(''):'<div style="padding:9px 10px;color:#64748b;background:#f8fafc;border-radius:8px;margin-top:7px">No saved visits yet — this patient is shown because All Cases is enabled.</div>';
+   const visitHtml=vsStackHtml(p.id,{actions:true,withFile:true});
    return `<div class="mf-item" style="cursor:default;align-items:flex-start;margin-bottom:10px;display:block">
      <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
        <div class="mf-info" style="min-width:220px">
@@ -3186,7 +3314,7 @@ async function renderGlobalSavedVisits(){
        </div>
        <div class="mf-actions" style="display:flex;gap:5px;flex-wrap:wrap">
          <button class="btn sm primary" type="button" onclick="event.stopPropagation();addVisitForPatient('${p.id}')">➕ Add Visit</button>
-         ${saved.length?`<button class="btn sm blue" type="button" onclick="event.stopPropagation();showPatientVisits('${p.id}')">👁 View Patient</button>`:''}
+         <button class="btn sm blue" type="button" onclick="event.stopPropagation();showPatientVisits('${p.id}')">📄 عرض الملف وكل الزيارات</button>
        </div>
      </div>
      ${visitHtml}
@@ -3271,6 +3399,10 @@ function viewCurrentMedicalFile(){
 if(!filePatient){toast('❌ المريضة غير موجودة');return;}
 const mf={id:'medical-file-'+filePatient.id,patientId:filePatient.id,timestamp:filePatient.ogHistorySavedAt||filePatient.updatedAt||filePatient.createdAt||Date.now(),data:{patientInfo:{...filePatient},ogHistory:getMedicalFileOnlyData(filePatient.ogHistory||{})}};
 renderFullMedicalFileProfessional(mf,filePatient,filePatient.ogHistory||{});
+try{
+  const host=document.querySelector('#mfFileViewContent > div');
+  if(host)host.insertAdjacentHTML('beforeend',vsStackHtml(filePatient.id,{actions:false,withFile:false}));
+}catch(e){console.warn('visits stack failed',e);}
 }
 function viewMedicalFile(id){
 // Legacy ids are intentionally ignored here: medical file is patient-owned, not a visit record.
@@ -3496,6 +3628,7 @@ html+=section('🔑 Important Notes',fld('Important Notes',v.keyNotes));
 html+=section('💊 Management',mgmtHtml);
 html+=section('🔜 Next Visit',fld('Next Visit',v.nextVisitDate?fmtDate(v.nextVisitDate):''));
 html=_hd+mfLayoutWrap(html,0,'visit')+`<div class="mf-footer">Saved: ${new Date(mf.timestamp||Date.now()).toLocaleString('en-GB')}</div>`;
+if(target&&target.htmlOnly){target.content.innerHTML=html;return;}
 if(target){
 target.title.textContent=`📄 Visit Details — ${savedPatient.name||'Patient'}`;
 target.content.innerHTML=html;
