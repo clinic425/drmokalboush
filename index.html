@@ -1762,8 +1762,11 @@ let msg='';try{msg=(e&&(e.message||e.error_description||e.msg))||(typeof e==='st
 if(!msg||msg==='{}')msg='Failed to connect';$('globalErrorMsg').textContent=msg;$('globalError').style.display='flex';
 }
 async function unsubscribeRealtime(){
-try{if(ch){await ch.unsubscribe();}}catch(e){console.warn('Realtime unsubscribe failed',e);}
-ch=null;
+rtGen++;clearInterval(rtHb);rtHb=null;
+const old=ch;ch=null;clearTimeout(window.__rtRetry);
+const chans=Object.values(rtChans);rtChans={};rtBad={};
+for(const c of chans){try{await sb.removeChannel(c);}catch(e){}}
+try{if(old){await sb.removeChannel(old);}}catch(e){console.warn('Realtime unsubscribe failed',e);}
 }
 function resetClientData(){
 data={patients:[],visits:[],prescriptions:[],labResults:[],chat:[],staffProfiles:[],medicalFiles:[],drugPackages:[],drugLibrary:[],settings:{clinicName:'',examPrice:0,followupPrice:0,sources:[],visitPurposes:[],rxLabTests:[]}};
@@ -1782,6 +1785,7 @@ currentUser={id:prof.id,username:prof.username};
 await loadAll();
 await loadDrugLibrary();
 await ensureDefaultsRemote();
+setStatus('connecting');
 subscribeRealtime();
 online=true;
 setStatus('online');
@@ -1832,7 +1836,7 @@ $('loginUser').value='';$('loginPass').value='';$('loginError').textContent='';
 await showLoginOrBootstrap();
 }
 function setStatus(state){const el=$('connStatus');if(state==='online'){el.textContent='🟢 Online';el.className='status online';}else if(state==='connecting'){el.textContent='🟡 Connecting...';el.className='status offline';}else{el.textContent='🔴 Offline';el.className='status error';}}
-$('connStatus').onclick=()=>showTab('settings',document.querySelector('.tab[data-tab="settings"]'));
+$('connStatus').onclick=()=>{rtHeartbeat();toast(rtSummary());};
 let visitsRecordsLoaded=false;
 let data={patients:[],visits:[],prescriptions:[],labResults:[],chat:[],staffProfiles:[],medicalFiles:[],drugPackages:[],drugLibrary:[],settings:{clinicName:'',examPrice:0,followupPrice:0,sources:[],visitPurposes:[],rxLabTests:[]}};
 async function loadAll(){
@@ -1978,31 +1982,85 @@ try{
   return false;
 }
 }
-function subscribeRealtime(){
-ch=sb.channel('clinic-db-changes');
-[['patients','patients'],['visits','visits'],['prescriptions','prescriptions'],['lab_results','labResults'],['settings','settings'],['chat_messages','chat'],['staff_profiles','staffProfiles'],['clinical_visits','medicalFiles'],['drug_packages','drugPackages'],['drug_library','drugLibrary']].forEach(([table,store])=>{
-ch.on('postgres_changes',{event:'*',schema:'public',table},payload=>{
+const RT_TABLES=[['patients','patients'],['visits','visits'],['prescriptions','prescriptions'],['lab_results','labResults'],['settings','settings'],['chat_messages','chat'],['staff_profiles','staffProfiles'],['clinical_visits','medicalFiles'],['drug_packages','drugPackages'],['drug_library','drugLibrary']];
+let rtChans={},rtBad={},rtGen=0,rtHb=null,rtDbOk=false,rtWarned=false;
+function rtSummary(){const bad=Object.keys(rtBad);return (rtDbOk?'Database: OK':'Database: UNREACHABLE')+(bad.length?' | Live sync failed for: '+bad.map(t=>t+' ('+rtBad[t]+')').join(', '):' | Live sync: OK');}
+function rtPaint(){
+const bad=Object.keys(rtBad);const el=$('connStatus');if(!el)return;
+online=rtDbOk;
+if(!rtDbOk){setStatus('error');}
+else if(bad.length){el.textContent='🟠 Online (no live sync)';el.className='status offline';}
+else{setStatus('online');}
+el.title=rtSummary();
+}
+async function rtHeartbeat(){
+try{const{error}=await sb.from('settings').select('key').limit(1);if(error)throw error;rtDbOk=true;}
+catch(e){rtDbOk=false;console.warn('Heartbeat failed',e);}
+rtPaint();
+}
+function handleRealtimeChange(table,store,payload){
 if(table==='settings'){if(payload.eventType==='DELETE')return;data.settings[payload.new.key]=payload.new.value;renderAll();return;}
 if(payload.eventType==='DELETE'){data[store]=data[store].filter(r=>r.id!==payload.old.id);}
 else{
-const rec = fromRow(store,payload.new);
-const arr = data[store];
-if(!arr) return;
-const i = arr.findIndex(r => r.id === rec.id);
-if(i >= 0){arr[i] = rec;}else{arr.push(rec);}
-if(store === 'drugLibrary'){
-sharedDrugLibrary = arr.slice();
-localStorage.setItem(LS_DRUGS,JSON.stringify(sharedDrugLibrary.map(d => ({name:d.name,dose:d.dose,note:d.note}))));
+const rec=fromRow(store,payload.new);
+const arr=data[store];
+if(!arr)return;
+const i=arr.findIndex(r=>r.id===rec.id);
+if(i>=0){arr[i]=rec;}else{arr.push(rec);}
+if(store==='drugLibrary'){
+sharedDrugLibrary=arr.slice();
+localStorage.setItem(LS_DRUGS,JSON.stringify(sharedDrugLibrary.map(d=>({name:d.name,dose:d.dose,note:d.note}))));
 }
-if(store === 'chat' && payload.eventType === 'INSERT'){receivePM(rec);}
+if(store==='chat'&&payload.eventType==='INSERT'){receivePM(rec);}
 }
 if(store==='staffProfiles'&&currentUser){const me=data.staffProfiles.find(x=>x.id===currentUser.id);if(!me||me.blocked){toast('🚪 Access revoked');doLogout();}}
 renderAll();
-});
-});
-ch.on('presence',{event:'sync'},()=>setPresenceUsers(ch.presenceState()));
-ch.subscribe(async status=>{if(status==='SUBSCRIBED'){online=true;setStatus('online');await ch.track({clientId,userId:currentUser?.id||'',username:currentUser?.username||'',name:myName||currentUser?.username||'Unknown'});}else if(status==='CHANNEL_ERROR'||status==='CLOSED'){online=false;setStatus('error');}});
 }
+function startTableChannel(table,store,gen,attempt){
+if(gen!==rtGen||!currentUser)return;
+const c=sb.channel('rt-'+table+'-'+gen+'-'+attempt);
+rtChans[table]=c;
+c.on('postgres_changes',{event:'*',schema:'public',table},payload=>{if(gen===rtGen)handleRealtimeChange(table,store,payload);});
+c.subscribe((status,err)=>{
+if(gen!==rtGen||rtChans[table]!==c)return;
+if(status==='SUBSCRIBED'){delete rtBad[table];rtPaint();}
+else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+rtBad[table]=(err&&err.message)?err.message:status;
+console.error('Realtime failed for table "'+table+'":',status,err);
+if(!rtWarned){rtWarned=true;toast('⚠️ Live sync failed for table: '+table+' — شغّل realtime_fix.sql');}
+rtPaint();
+try{sb.removeChannel(c);}catch(e){}
+const wait=Math.min(60000,5000*Math.pow(2,Math.min(attempt,4)));
+setTimeout(()=>startTableChannel(table,store,gen,attempt+1),wait);
+}
+});
+}
+function subscribeRealtime(){
+const gen=++rtGen;rtBad={};rtWarned=false;
+RT_TABLES.forEach(([table,store])=>startTableChannel(table,store,gen,0));
+// presence (online users) on its own channel
+const pc=sb.channel('clinic-presence-'+gen);
+ch=pc;
+pc.on('presence',{event:'sync'},()=>setPresenceUsers(pc.presenceState()));
+pc.subscribe(async(status,err)=>{
+if(gen!==rtGen)return;
+if(status==='SUBSCRIBED'){try{await pc.track({clientId,userId:currentUser?.id||'',username:currentUser?.username||'',name:myName||currentUser?.username||'Unknown'});}catch(e){console.warn('Realtime track failed',e);}}
+else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+console.error('Presence channel failed:',status,err);
+setTimeout(()=>{if(gen===rtGen&&currentUser&&ch===pc){try{sb.removeChannel(pc);}catch(e){}subscribeRealtimePresenceOnly(gen);}},8000);
+}
+});
+clearInterval(rtHb);rtHeartbeat();rtHb=setInterval(rtHeartbeat,15000);
+}
+function subscribeRealtimePresenceOnly(gen){
+if(gen!==rtGen||!currentUser)return;
+const pc=sb.channel('clinic-presence-'+gen+'-'+Date.now());ch=pc;
+pc.on('presence',{event:'sync'},()=>setPresenceUsers(pc.presenceState()));
+pc.subscribe(async(status)=>{if(gen!==rtGen)return;if(status==='SUBSCRIBED'){try{await pc.track({clientId,userId:currentUser?.id||'',username:currentUser?.username||'',name:myName||currentUser?.username||'Unknown'});}catch(e){}}
+else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){setTimeout(()=>{if(gen===rtGen&&currentUser&&ch===pc){try{sb.removeChannel(pc);}catch(e){}subscribeRealtimePresenceOnly(gen);}},15000);}});
+}
+window.addEventListener('online',()=>{if(sb&&currentUser)rtHeartbeat();});
+window.addEventListener('offline',()=>{rtDbOk=false;rtPaint();});
 const FIELDS=[
 {k:'name',label:'اسم المريضة *',type:'text',ph:'ادخل الاسم...'},
 {k:'age',label:'السن *',type:'text',numeric:true},
