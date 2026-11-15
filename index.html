@@ -37,6 +37,217 @@ window.__uiDetect=function(){
 
 <title>⚕ Dr. Mohamed Kalboush</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script id="hx-hybrid">
+/* Hybrid storage: cloud (Supabase) + local hub (clinic computer / LAN). The rest of the app is untouched. */
+(function(){
+'use strict';
+const LS=localStorage,$=id=>document.getElementById(id);
+const HUB_READ=['patients','visits','prescriptions','lab_results','clinical_visits','chat_messages'];   /* big tables: read from the computer */
+const HX=window.HX={hubUp:false,hubOK:false,cloudUp:null,base:null,meta:null,ready:Promise.resolve()};
+window.HXnet=()=>navigator.onLine||HX.hubUp;
+const tmo=(p,ms)=>{let t;return Promise.race([Promise.resolve(p),new Promise((_,r)=>{t=setTimeout(()=>r(new Error('timeout')),ms);})]).finally(()=>clearTimeout(t));};
+const isNet=e=>!!e&&/fetch|network|timeout|abort|load failed|offline|connection/i.test(String(e.message||e));
+function sha256js(m){
+ const K=[],H=[];for(let n=2,c=0;c<64;n++){let p=1;for(let i=2;i*i<=n;i++)if(n%i<1){p=0;break;}if(p){if(c<8)H[c]=Math.sqrt(n)%1*4294967296|0;K[c++]=Math.cbrt(n)%1*4294967296|0;}}
+ const b=[...new TextEncoder().encode(m)],l=b.length*8,R=(v,n)=>v>>>n|v<<32-n;b.push(128);while(b.length%64!=56)b.push(0);
+ for(let i=7;i>=0;i--)b.push(i>3?0:(l>>>i*8-0)&255);
+ const h=H.slice(),W=[];
+ for(let o=0;o<b.length;o+=64){
+  for(let i=0;i<16;i++)W[i]=b[o+i*4]<<24|b[o+i*4+1]<<16|b[o+i*4+2]<<8|b[o+i*4+3];
+  for(let i=16;i<64;i++){const a=W[i-15],c=W[i-2];W[i]=W[i-16]+(R(a,7)^R(a,18)^a>>>3)+W[i-7]+(R(c,17)^R(c,19)^c>>>10)|0;}
+  let[a,bb,c,d,e,f,g,hh]=h;
+  for(let i=0;i<64;i++){const t1=hh+(R(e,6)^R(e,11)^R(e,25))+((e&f)^(~e&g))+K[i]+W[i]|0,t2=(R(a,2)^R(a,13)^R(a,22))+((a&bb)^(a&c)^(bb&c))|0;hh=g;g=f;f=e;e=d+t1|0;d=c;c=bb;bb=a;a=t1+t2|0;}
+  [a,bb,c,d,e,f,g,hh].forEach((v,i)=>{h[i]=h[i]+v|0;});
+ }
+ return h.map(v=>(v>>>0).toString(16).padStart(8,'0')).join('');
+}
+async function sha(s){
+ if(window.crypto&&crypto.subtle)return[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+ return sha256js(s);
+}
+HX.sha=sha;HX.sha256js=sha256js;
+
+/* ---------- hub (local server) ---------- */
+const cands=()=>[...new Set([HX.base,LS.getItem('hx_hub'),/^http:/.test(location.protocol)?location.origin:null,'http://localhost:8788'].filter(Boolean))];
+async function hub(path,body,ms){
+ if(!HX.base)throw new Error('hub offline');
+ const r=await tmo(fetch(HX.base+path,body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),ms||10000);
+ return r.json();
+}
+async function probeHub(){
+ for(const b of cands()){
+  try{const j=await (await tmo(fetch(b+'/hub/ping'),2500)).json();
+   if(j&&j.hub&&(!HX.sbUrl||j.sb===HX.sbUrl)){HX.base=b;HX.hubOK=!!j.ready&&j.age<(j.max||180);if(!HX.hubUp){HX.hubUp=true;openSSE();}paint();return;}}catch(_){}
+ }
+ if(HX.hubUp){HX.hubUp=false;closeSSE();}
+ paint();
+}
+let es=null,HP={};
+const CH=new Set();
+function closeSSE(){if(es){try{es.close();}catch(_){}es=null;}}
+function openSSE(){
+ closeSSE();
+ try{
+  es=new EventSource(HX.base+'/hub/events');
+  es.onmessage=m=>{
+   let ev;try{ev=JSON.parse(m.data);}catch(_){return;}
+   if(ev.kind==='presence'){HP=ev.state||{};if(HX.cloudUp===false)CH.forEach(o=>o.pr.forEach(f=>{try{f();}catch(_){}}));return;}
+   /* while the cloud is reachable, live updates come from the cloud itself; the hub feed takes over when it is not */
+   if(ev.kind==='change'&&HX.cloudUp===false)CH.forEach(o=>o.h.forEach(([t,f])=>{if(t===ev.table){try{f({eventType:ev.eventType,new:ev.new,old:ev.old});}catch(e){console.warn(e);}}}));
+  };
+ }catch(_){}
+}
+
+/* ---------- cloud state ---------- */
+let real=null,flushing=false;
+async function probeCloud(){
+ if(!real)return;
+ if(!navigator.onLine)return setCloud(false);
+ try{const r=await tmo(real.from('settings').select('key').limit(1),6000);setCloud(!(r.error&&isNet(r.error)));}catch(_){setCloud(false);}
+}
+async function setCloud(up){
+ if(up===HX.cloudUp||flushing)return;
+ const was=HX.cloudUp;
+ /* internet is back: let the hub push what was saved offline BEFORE the app re-reads from the cloud */
+ if(up&&was===false&&HX.hubUp){flushing=true;try{await hub('/hub/flush',{},35000);}catch(_){}flushing=false;}
+ HX.cloudUp=up;paint();
+ if(up&&was===false)setTimeout(()=>{try{if(typeof currentUser!=='undefined'&&currentUser)rtRebuild();}catch(_){}},800);
+}
+function paint(){
+ const el=$('connStatus');if(!el)return;
+ if(HX.cloudUp===false&&HX.hubUp){el.textContent='🟣 LAN — بدون إنترنت';el.className='status offline';el.title='الشغل بيتخزن على الكمبيوتر وهيترفع للكلاود لما النت يرجع';}
+ else if(HX.cloudUp===false){el.textContent='🔴 Offline';el.className='status error';}
+ else if(HX.hubUp&&/^🟢 Online$/.test(el.textContent))el.textContent='🟢 Online + 💾';
+}
+HX.paint=paint;
+
+/* ---------- query router: records the app's chain, then runs it on cloud and/or hub ---------- */
+function Q(t){
+ const s={t,op:null,args:[],ch:[]};
+ const px=new Proxy({},{get(_,m){
+  if(m==='then')return(a,b)=>exec(s).then(a,b);
+  if(typeof m!=='string')return undefined;
+  return(...a)=>{if(!s.op&&/^(select|insert|upsert|update|delete)$/.test(m)){s.op=m;s.args=a;}else s.ch.push([m,a]);return px;};
+ }});
+ return px;
+}
+async function cloudCall(s){
+ try{
+  let b=real.from(s.t);b=b[s.op](...s.args);for(const[m,a]of s.ch)b=b[m](...a);
+  const r=await tmo(b,12000);
+  if(r&&r.error&&isNet(r.error)){setCloud(false);r.netErr=true;}
+  return r;
+ }catch(e){setCloud(false);return{data:null,error:{message:String(e.message||e)},netErr:true};}
+}
+async function hubCall(s,done){
+ try{return await hub('/hub/rest',{t:s.t,op:s.op,args:s.args,ch:s.ch,done:!!done});}
+ catch(e){HX.hubUp=false;closeSSE();paint();return{data:null,error:{message:'Hub offline'},netErr:true};}
+}
+async function exec(s){
+ const cloud=HX.cloudUp!==false&&!!real;
+ if(s.op==='select'){                                   /* reads: cloud first, else the computer */
+  if(HX.hubUp&&HX.hubOK&&HUB_READ.includes(s.t)){const r=await hubCall(s);if(!r.netErr)return r;}   /* computer: fast local copy */
+  if(cloud){const r=await cloudCall(s);if(!r.netErr)return r;}
+  return HX.hubUp?hubCall(s):{data:null,error:{message:'Offline'}};
+ }
+ let cr=null;                                           /* writes: cloud AND computer */
+ if(cloud){cr=await cloudCall(s);if(cr.error&&!cr.netErr)return cr;}
+ const done=!!cr&&!cr.error;
+ let h=s;
+ if(done&&s.op==='insert'&&cr.data&&!Array.isArray(cr.data))h={...s,op:'upsert',args:[[].concat(s.args[0]).map(r=>({...r,...cr.data}))]};
+ const hr=HX.hubUp?await hubCall(h,done):null;          /* hub queues it for the cloud when done=false */
+ if(done)return cr;
+ return hr&&!hr.netErr?hr:(cr||hr||{data:null,error:{message:'Offline'}});
+}
+
+/* ---------- auth: cloud login online, hub login offline ---------- */
+const hs=()=>{try{return JSON.parse(LS.getItem('hx_sess')||'null');}catch(_){return null;}};
+function wrapAuth(auth){
+ return new Proxy(auth,{get(t,k){
+  if(k==='getSession')return async()=>{
+   await HX.ready;
+   try{const r=await tmo(t.getSession(),5000);if(r&&r.data&&r.data.session)return r;}catch(_){}
+   const h=hs();
+   if(h&&HX.hubUp&&HX.cloudUp===false)return{data:{session:{user:{id:h.id}}},error:null};
+   return{data:{session:null},error:null};
+  };
+  if(k==='signInWithPassword')return async c=>{
+   const u=(($('loginUser')||{}).value||'').trim().toLowerCase(),v=await sha(u+':'+c.password);
+   if(HX.cloudUp!==false){
+    try{const r=await tmo(t.signInWithPassword(c),10000);
+     if(!(r.error&&isNet(r.error))){
+      LS.removeItem('hx_sess');
+      if(!r.error&&HX.hubUp&&r.data&&r.data.user)hub('/hub/learn',{id:r.data.user.id,username:u,v}).catch(()=>{});
+      return r;}
+    }catch(_){}
+    setCloud(false);
+   }
+   if(HX.hubUp){const r=await hub('/hub/login',{username:u,v});
+    if(r&&r.user){LS.setItem('hx_sess',JSON.stringify(r.user));return{data:{session:{user:r.user},user:r.user},error:null};}}
+   return{data:{session:null,user:null},error:{message:'Invalid login credentials'}};
+  };
+  if(k==='signOut')return async o=>{LS.removeItem('hx_sess');try{return await t.signOut(o);}catch(_){return{error:null};}};
+  const v=t[k];return typeof v==='function'?v.bind(t):v;
+ }});
+}
+
+/* ---------- realtime: cloud channel + hub feed in one object ---------- */
+/* a change made elsewhere (phone, another site) arrives from the cloud: copy it into the computer's store at once */
+function mirror(t,p){
+ if(!HX.hubUp||!HX.hubOK||!HUB_READ.includes(t))return;
+ const s=p.eventType==='DELETE'?{t,op:'delete',args:[],ch:[['eq',['id',p.old&&p.old.id]]]}:{t,op:'upsert',args:[p.new||{}],ch:[]};
+ hubCall(s,true);
+}
+function channel(name){
+ const rc=real.channel(name),o={rc,h:[],pr:[]};
+ o.on=(type,opt,cb)=>{rc.on(type,opt,type==='postgres_changes'?p=>{mirror(opt.table,p);cb(p);}:cb);if(type==='postgres_changes')o.h.push([opt.table,cb]);else if(type==='presence')o.pr.push(cb);return o;};
+ o.subscribe=cb=>{
+  CH.add(o);
+  rc.subscribe((s,e)=>{if(!cb)return;if(s==='SUBSCRIBED'||!HX.hubUp)cb(s,e);else cb('SUBSCRIBED');});
+  if(cb&&HX.hubUp&&HX.cloudUp===false)setTimeout(()=>cb('SUBSCRIBED'),0);
+  return o;
+ };
+ o.track=m=>{
+  HX.meta=m;
+  if(HX.hubUp)hub('/hub/presence',{cid:LS.getItem('clinic-client-id'),meta:m}).catch(()=>{});
+  return Promise.resolve(HX.cloudUp!==false?rc.track(m):0).catch(()=>{}).then(()=>'ok');
+ };
+ o.presenceState=()=>{let s={};try{Object.assign(s,rc.presenceState());}catch(_){}if(HX.cloudUp===false)Object.assign(s,HP);return s;};
+ return o;
+}
+
+function install(){
+ const S=window.supabase;
+ if(!S||!S.createClient){console.warn('supabase library missing');return;}
+ const cc=S.createClient.bind(S);
+ let started=false;
+ window.supabase={...S,createClient(u,k,o){
+  const r=cc(u,k,o);
+  if(o&&o.auth&&o.auth.persistSession===false)return r;          /* temp client used to create staff accounts */
+  real=r;HX.sbUrl=u;
+  if(!started){started=true;HX.ready=Promise.all([probeHub(),probeCloud()]);
+   setInterval(probeHub,8000);setInterval(probeCloud,20000);
+   addEventListener('online',probeCloud);addEventListener('offline',()=>setCloud(false));
+   setInterval(()=>{if(HX.hubUp&&HX.meta)hub('/hub/presence',{cid:LS.getItem('clinic-client-id'),meta:HX.meta}).catch(()=>{});},20000);}
+  return{
+   from:Q,auth:wrapAuth(r.auth),channel,realtime:r.realtime,
+   removeChannel(c){CH.delete(c);try{return r.removeChannel(c.rc||c);}catch(_){return Promise.resolve('ok');}},
+   rpc(n,a){return(async()=>{
+    if(HX.cloudUp!==false){try{const x=await tmo(r.rpc(n,a),6000);if(!(x.error&&isNet(x.error)))return x;}catch(_){}setCloud(false);}
+    return HX.hubUp?hub('/hub/rpc',{n,a}):{data:null,error:{message:'Offline'}};})();}
+  };
+ }};
+}
+install();
+addEventListener('load',()=>{
+ window.sha256Hex=sha;                                  /* crypto.subtle does not exist on http://192.168.x.x pages */
+ const la=window.loadAll;   /* opening/refreshing the app: let the computer pull the newest cloud data first (phone entries) */
+ if(typeof la==='function')window.loadAll=async function(){if(HX.hubUp&&HX.cloudUp!==false){try{await hub('/hub/sync',{},22000);}catch(_){}}return la.apply(this,arguments);};
+ const rp=window.rtPaint;if(typeof rp==='function')window.rtPaint=function(){rp.apply(this,arguments);paint();};
+});
+})();
+</script>
+
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0 }
 body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #f3f6fa; color: #1e293b; min-height: 100vh }
@@ -2046,7 +2257,7 @@ if(store==='drugLibrary')return{id:r.id,name:r.drug_name||'',dose:r.dose||'',not
 return r;
 }
 function toRow(store,p){
-if(store==='patients')return{id:p.id,name:p.name,age:p.age?+p.age:null,husband_name:p.husbandName||'',husband_job:p.husbandJob||'',phone:p.phone||'',visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',source_category:p.sourceCategory||'',source_social:p.sourceSocial||'',source_friend_name:p.sourceFriendName||'',source_doctor_name:p.sourceDoctorName||'',source_street_details:p.sourceStreetDetails||'',source_other:p.sourceOther||'',date:p.date||null,time:p.time||null,status:p.status||'Waiting',notes:p.notes||'',created_at:p.createdAt||Date.now(),called_at:p.calledAt||null,marital_status:p.maritalStatus||'',is_first_marriage:p.isFirstMarriage||'',married_years:p.marriedYears||'',has_children:p.hasChildren||'',children_count:p.childrenCount?+p.childrenCount:null,delivery_type:p.deliveryType||'',husband_age:p.husbandAge?+p.husbandAge:null,husband_smoker:p.husbandSmoker||'',husband_diseased:p.husbandDiseased||'',husband_disease_text:p.husbandDiseaseText||'',og_history:__packOg(p),address:p.address||'',husband_first_marriage:p.husbandFirstMarriage||'',husband_offspring:p.husbandOffspring||'',husband_offspring_count:p.husbandOffspringCount?+p.husbandOffspringCount:null,husband_offspring_males:p.husbandOffspringMales?+p.husbandOffspringMales:null,husband_offspring_females:p.husbandOffspringFemales?+p.husbandOffspringFemales:null,husband_offspring_names:p.husbandOffspringNames||''};
+if(store==='patients')return{id:p.id,name:p.name||'',age:p.age?+p.age:null,husband_name:p.husbandName||'',husband_job:p.husbandJob||'',phone:p.phone||'',visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',source_category:p.sourceCategory||'',source_social:p.sourceSocial||'',source_friend_name:p.sourceFriendName||'',source_doctor_name:p.sourceDoctorName||'',source_street_details:p.sourceStreetDetails||'',source_other:p.sourceOther||'',date:p.date||null,time:p.time||null,status:p.status||'Waiting',notes:p.notes||'',created_at:p.createdAt||Date.now(),called_at:p.calledAt||null,marital_status:p.maritalStatus||'',is_first_marriage:p.isFirstMarriage||'',married_years:p.marriedYears||'',has_children:p.hasChildren||'',children_count:p.childrenCount?+p.childrenCount:null,delivery_type:p.deliveryType||'',husband_age:p.husbandAge?+p.husbandAge:null,husband_smoker:p.husbandSmoker||'',husband_diseased:p.husbandDiseased||'',husband_disease_text:p.husbandDiseaseText||'',og_history:__packOg(p),address:p.address||'',husband_first_marriage:p.husbandFirstMarriage||'',husband_offspring:p.husbandOffspring||'',husband_offspring_count:p.husbandOffspringCount?+p.husbandOffspringCount:null,husband_offspring_males:p.husbandOffspringMales?+p.husbandOffspringMales:null,husband_offspring_females:p.husbandOffspringFemales?+p.husbandOffspringFemales:null,husband_offspring_names:p.husbandOffspringNames||''};
 if(store==='visits')return{id:p.id,patient_id:p.patientId,date:p.date||null,time:p.time||null,visit_purpose:p.visitPurpose||'',visit_type:p.visitType||'',notes:p.notes||'',ts:p.ts||Date.now()};
 if(store==='prescriptions')return{id:p.id,patient_id:p.patientId,patient_name:p.patientName,patient_age:p.patientAge?+p.patientAge:null,diagnosis:p.diagnosis||'',meds:p.meds||[],labs:p.labs||[],date:p.date||null,ts:p.ts||Date.now()};
 if(store==='labResults')return{id:p.id,patient_id:p.patientId,test_name:p.testName||'',result:p.result||'',notes:p.notes||'',date:p.date||null,ts:p.ts||Date.now()};
@@ -2373,7 +2584,7 @@ function clearLink(){linkedPatientId=null;linkedName='';$('regLinkBanner').style
 function unlinkNew(){clearLink();toast('سيتم التسجيل كمريضة جديدة');}
 async function saveReception(){
 const v=getForm('reg');
-if(!v.name||!v.age||!v.visitPurpose||!v.visitType){toast('⚠ Complete required fields');return;}
+if(!(v.name||v.age||v.phone||v.visitPurpose||v.visitType)){toast('⚠ اكتب أي بيان قبل الحفظ');return;}
 if(linkedPatientId){
 const old=data.patients.find(x=>x.id===linkedPatientId);
 if(old){
@@ -2432,7 +2643,7 @@ openModal('patientModal');
 }
 async function savePatientModal(){
 const v=getForm('pm');
-if(!v.name||!v.age||!v.visitPurpose||!v.visitType){toast('⚠ Complete required fields');return;}
+if(!(v.name||v.age||v.phone||v.visitPurpose||v.visitType)){toast('⚠ اكتب أي بيان قبل الحفظ');return;}
 let p=editingId?{...(data.patients.find(x=>x.id===editingId)||{id:editingId,createdAt:Date.now(),status:'Waiting'}),...v}:{id:uid(),...pmCarry,...v,status:'Waiting',createdAt:Date.now()};
 const ok=await dbPut('patients',p);if(ok){closeModal('patientModal');toast('✅ Saved');editingId=null;pmCarry={};}
 }
@@ -5723,21 +5934,21 @@ let Q=[],busy=false,lastSig='';
 async function loadQ(){try{Q=(await idbGet(QK))||[];}catch(_){Q=[];}badge();}
 async function saveQ(){try{await idbSet(QK,Q);}catch(_){}badge();}
 function badge(){let b=$('hxNet');if(!b){b=document.createElement('div');b.id='hxNet';b.style.cssText='position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:100000;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.25);display:none;cursor:pointer';b.onclick=()=>sync(true);document.body.appendChild(b);}
- const off=!navigator.onLine;if(off){b.style.cssText+=';display:block;background:#b91c1c;color:#fff';b.textContent='📴 أوفلاين'+(Q.length?' — '+Q.length+' تعديل بالانتظار':'');}
+ const off=!HXnet();if(off){b.style.cssText+=';display:block;background:#b91c1c;color:#fff';b.textContent='📴 أوفلاين'+(Q.length?' — '+Q.length+' تعديل بالانتظار':'');}
  else if(Q.length){b.style.cssText+=';display:block;background:#f59e0b;color:#000';b.textContent='⏳ مزامنة '+Q.length+' تعديل... (اضغط للإعادة)';}else b.style.display='none';}
 /* offline-aware writes */
 const _put=window.dbPut,_del=window.dbDel;
 window.dbPut=async function(store,rec){
- if(navigator.onLine)return _put.apply(this,arguments);
+ if(HXnet())return _put.apply(this,arguments);
  const a=data[store];if(!Array.isArray(a))throw new Error('Unknown data store: '+store);
  const i=a.findIndex(r=>r.id===rec.id);if(i>=0)a[i]=rec;else a.push(rec);
  Q=Q.filter(x=>!(x.op==='put'&&x.store===store&&x.id===rec.id));Q.push({op:'put',store,id:rec.id,rec,t:Date.now()});await saveQ();renderAll();toast('📴 حُفظ على الجهاز وسيُرسل عند عودة الإنترنت');return true;};
 window.dbDel=async function(store,id){
- if(navigator.onLine)return _del.apply(this,arguments);
+ if(HXnet())return _del.apply(this,arguments);
  const a=data[store];const i=a.findIndex(r=>r.id===id);if(i<0)return false;a.splice(i,1);
  Q=Q.filter(x=>!(x.store===store&&x.id===id));Q.push({op:'del',store,id,t:Date.now()});await saveQ();renderAll();toast('📴 الحذف سيُنفَّذ عند عودة الإنترنت');return true;};
 async function sync(manual){
- if(busy||!Q.length||!navigator.onLine||!sb)return;busy=true;let n=0;
+ if(busy||!Q.length||!HXnet()||!sb)return;busy=true;let n=0;
  try{while(Q.length){const x=Q[0],tb=STORE_TABLE[x.store];
   const r=x.op==='put'?await sb.from(tb).upsert(toRow(x.store,x.rec)):await sb.from(tb).delete().eq('id',x.id);
   if(r.error)throw r.error;Q.shift();n++;await saveQ();}
@@ -5745,22 +5956,22 @@ async function sync(manual){
  catch(e){console.error('offline sync',e);toast('⚠️ تعذرت المزامنة: '+(e.message||'خطأ')+' — ستُعاد المحاولة');}
  busy=false;badge();}
 /* offline reads: full local snapshot */
-async function snap(){try{if(!navigator.onLine||!uidk()||!(data.patients||[]).length)return;
+async function snap(){try{if(!HXnet()||!uidk()||!(data.patients||[]).length)return;
  const sig=['patients','visits','medicalFiles','prescriptions','labResults','drugPackages','drugLibrary','staffProfiles'].map(k=>(data[k]||[]).length).join('-')+(JSON.stringify(data.settings||{}).length);
  if(sig===lastSig)return;lastSig=sig;await idbSet(FK(),{t:Date.now(),d:data});}catch(e){console.warn('snap',e);}}
 const _load=window.loadAll;
 window.loadAll=async function(){
- if(!navigator.onLine){try{const s=await idbGet(FK());if(s&&s.d){Object.keys(s.d).forEach(k=>{data[k]=s.d[k];});renderAll();toast('📴 وضع أوفلاين — آخر نسخة محفوظة ('+new Date(s.t).toLocaleString('ar-EG')+')');return;}}catch(_){}}
+ if(!HXnet()){try{const s=await idbGet(FK());if(s&&s.d){Object.keys(s.d).forEach(k=>{data[k]=s.d[k];});renderAll();toast('📴 وضع أوفلاين — آخر نسخة محفوظة ('+new Date(s.t).toLocaleString('ar-EG')+')');return;}}catch(_){}}
  const r=await _load.apply(this,arguments);setTimeout(snap,4000);setTimeout(()=>sync(),1500);return r;};
 /* local backup (device download; the full-records option fetches once on request) */
 window.hxBackup=async function(full){
- if(full){if(!navigator.onLine||!confirm('سيحمّل كل سجلات الزيارات من السيرفر مرة واحدة (استهلاك egress لمرة واحدة). متابعة؟'))return;
+ if(full){if(!HXnet()||!confirm('سيحمّل كل سجلات الزيارات من السيرفر مرة واحدة (استهلاك egress لمرة واحدة). متابعة؟'))return;
   try{const{data:rows,error}=await pagedRows(()=>sb.from('clinical_visits').select('*'));if(error)throw error;(rows||[]).map(r=>fromRow('medicalFiles',r)).forEach(rec=>{const k=data.medicalFiles.findIndex(x=>x.id===rec.id);if(k>=0)data.medicalFiles[k]=rec;else data.medicalFiles.push(rec);});}catch(e){toast('❌ '+(e.message||'فشل التحميل'));return;}}
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({exportedAt:new Date().toISOString(),data},null,1)],{type:'application/json'}));a.download='clinic-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('💾 تم تنزيل النسخة الاحتياطية');};
 function settingsCard(){const s=$('tab-settings');if(!s||$('hxBk'))return;const d=document.createElement('div');d.id='hxBk';d.className='set-card';d.innerHTML='<h3>🛡️ النسخ الاحتياطي والأوفلاين</h3><p style="font-size:13px;color:#64748b">النسخة تُحفظ كملف على جهازك فقط. وضع الأوفلاين يحتفظ بآخر بيانات محمّلة ويرسل تعديلاتك تلقائياً عند عودة النت.</p><button class="btn primary" type="button" onclick="hxBackup(false)">💾 نسخة من البيانات المحمّلة</button> <button class="btn gray" type="button" onclick="hxBackup(true)">📦 نسخة كاملة (تحميل كل الزيارات)</button>';s.insertBefore(d,s.firstChild);}
 window.addEventListener('online',()=>{badge();setTimeout(sync,1200);});window.addEventListener('offline',badge);
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('.tab'))setTimeout(settingsCard,80);});
-setInterval(()=>{badge();snap();if(Q.length&&navigator.onLine)sync();},30000);
+setInterval(()=>{badge();snap();if(Q.length&&HXnet())sync();},30000);
 loadQ().then(()=>{badge();setTimeout(settingsCard,1500);});
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
